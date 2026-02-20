@@ -1,0 +1,48 @@
+{
+  "name": "generated_5_42",
+  "generator": "uniform",
+  "params": {
+    "n": 5,
+    "min_dim": 100.0,
+    "max_dim": 300.0,
+    "seed": 42
+  },
+  "box_count": 5,
+  "boxes": [
+    {
+      "id": 0,
+      "length": 227.9,
+      "width": 105.0,
+      "height": 155.0,
+      "weight": 1.0
+    },
+    {
+      "id": 1,
+      "length": 144.6,
+      "width": 247.3,
+      "height": 235.3,
+      "weight": 1.0
+    },
+    {
+      "id": 2,
+      "length": 278.4,
+      "width": 117.4,
+      "height": 184.4,
+      "weight": 1.0
+    },
+    {
+      "id": 3,
+      "length": 106.0,
+      "width": 143.7,
+      "height": 201.1,
+      "weight": 1.0
+    },
+    {
+      "id": 4,
+      "length": 105.3,
+      "width": 139.8,
+      "height": 230.0,
+      "weight": 1.0
+    }
+  ]
+}

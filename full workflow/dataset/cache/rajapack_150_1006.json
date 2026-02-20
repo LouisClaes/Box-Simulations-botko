@@ -1,0 +1,1063 @@
+{
+  "name": "rajapack_150_1006",
+  "generator": "rajapack",
+  "params": {
+    "n": 150,
+    "min_dim": 0.0,
+    "max_dim": 9999.0,
+    "seed": 1006
+  },
+  "box_count": 150,
+  "boxes": [
+    {
+      "id": 0,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 0.75
+    },
+    {
+      "id": 1,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 0.56
+    },
+    {
+      "id": 2,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 3.47
+    },
+    {
+      "id": 3,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 4.55
+    },
+    {
+      "id": 4,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 3.36
+    },
+    {
+      "id": 5,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 2.33
+    },
+    {
+      "id": 6,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 1.88
+    },
+    {
+      "id": 7,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 0.72
+    },
+    {
+      "id": 8,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 3.82
+    },
+    {
+      "id": 9,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 0.68
+    },
+    {
+      "id": 10,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 4.95
+    },
+    {
+      "id": 11,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 0.92
+    },
+    {
+      "id": 12,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 4.56
+    },
+    {
+      "id": 13,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 2.2
+    },
+    {
+      "id": 14,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 1.96
+    },
+    {
+      "id": 15,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 2.86
+    },
+    {
+      "id": 16,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 4.47
+    },
+    {
+      "id": 17,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 3.73
+    },
+    {
+      "id": 18,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 4.84
+    },
+    {
+      "id": 19,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 2.97
+    },
+    {
+      "id": 20,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 4.99
+    },
+    {
+      "id": 21,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 3.16
+    },
+    {
+      "id": 22,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 1.41
+    },
+    {
+      "id": 23,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 2.12
+    },
+    {
+      "id": 24,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 3.64
+    },
+    {
+      "id": 25,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 0.89
+    },
+    {
+      "id": 26,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 2.79
+    },
+    {
+      "id": 27,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 3.04
+    },
+    {
+      "id": 28,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 1.59
+    },
+    {
+      "id": 29,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 2.26
+    },
+    {
+      "id": 30,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 2.69
+    },
+    {
+      "id": 31,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 4.16
+    },
+    {
+      "id": 32,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 2.2
+    },
+    {
+      "id": 33,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 4.29
+    },
+    {
+      "id": 34,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 2.6
+    },
+    {
+      "id": 35,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 2.25
+    },
+    {
+      "id": 36,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 4.63
+    },
+    {
+      "id": 37,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 3.3
+    },
+    {
+      "id": 38,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 3.42
+    },
+    {
+      "id": 39,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 2.58
+    },
+    {
+      "id": 40,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 1.73
+    },
+    {
+      "id": 41,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 1.09
+    },
+    {
+      "id": 42,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 1.24
+    },
+    {
+      "id": 43,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 1.32
+    },
+    {
+      "id": 44,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 1.75
+    },
+    {
+      "id": 45,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 0.74
+    },
+    {
+      "id": 46,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 2.9
+    },
+    {
+      "id": 47,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 1.31
+    },
+    {
+      "id": 48,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 1.65
+    },
+    {
+      "id": 49,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 2.67
+    },
+    {
+      "id": 50,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 0.63
+    },
+    {
+      "id": 51,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 1.32
+    },
+    {
+      "id": 52,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 3.89
+    },
+    {
+      "id": 53,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 2.21
+    },
+    {
+      "id": 54,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 1.36
+    },
+    {
+      "id": 55,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 4.1
+    },
+    {
+      "id": 56,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 0.56
+    },
+    {
+      "id": 57,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 1.28
+    },
+    {
+      "id": 58,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 2.47
+    },
+    {
+      "id": 59,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 1.67
+    },
+    {
+      "id": 60,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 2.65
+    },
+    {
+      "id": 61,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 4.45
+    },
+    {
+      "id": 62,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 0.9
+    },
+    {
+      "id": 63,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 1.8
+    },
+    {
+      "id": 64,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 1.27
+    },
+    {
+      "id": 65,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 1.26
+    },
+    {
+      "id": 66,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 3.31
+    },
+    {
+      "id": 67,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 1.98
+    },
+    {
+      "id": 68,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 2.15
+    },
+    {
+      "id": 69,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 3.03
+    },
+    {
+      "id": 70,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 3.37
+    },
+    {
+      "id": 71,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 1.82
+    },
+    {
+      "id": 72,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 1.36
+    },
+    {
+      "id": 73,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 2.96
+    },
+    {
+      "id": 74,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 3.39
+    },
+    {
+      "id": 75,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 3.51
+    },
+    {
+      "id": 76,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 4.34
+    },
+    {
+      "id": 77,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 2.68
+    },
+    {
+      "id": 78,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 3.73
+    },
+    {
+      "id": 79,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 3.45
+    },
+    {
+      "id": 80,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 2.23
+    },
+    {
+      "id": 81,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 4.53
+    },
+    {
+      "id": 82,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 1.71
+    },
+    {
+      "id": 83,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 2.58
+    },
+    {
+      "id": 84,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 2.39
+    },
+    {
+      "id": 85,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 1.18
+    },
+    {
+      "id": 86,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 3.71
+    },
+    {
+      "id": 87,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 4.48
+    },
+    {
+      "id": 88,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 4.3
+    },
+    {
+      "id": 89,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 1.07
+    },
+    {
+      "id": 90,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 3.41
+    },
+    {
+      "id": 91,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 0.9
+    },
+    {
+      "id": 92,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 0.92
+    },
+    {
+      "id": 93,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 3.52
+    },
+    {
+      "id": 94,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 3.31
+    },
+    {
+      "id": 95,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 2.19
+    },
+    {
+      "id": 96,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 0.51
+    },
+    {
+      "id": 97,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 3.4
+    },
+    {
+      "id": 98,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 3.14
+    },
+    {
+      "id": 99,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 2.23
+    },
+    {
+      "id": 100,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 4.94
+    },
+    {
+      "id": 101,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 4.74
+    },
+    {
+      "id": 102,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 3.11
+    },
+    {
+      "id": 103,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 2.7
+    },
+    {
+      "id": 104,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 4.61
+    },
+    {
+      "id": 105,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 0.56
+    },
+    {
+      "id": 106,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 0.92
+    },
+    {
+      "id": 107,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 3.72
+    },
+    {
+      "id": 108,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 2.7
+    },
+    {
+      "id": 109,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 3.64
+    },
+    {
+      "id": 110,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 4.57
+    },
+    {
+      "id": 111,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 2.81
+    },
+    {
+      "id": 112,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 2.84
+    },
+    {
+      "id": 113,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 4.53
+    },
+    {
+      "id": 114,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 2.93
+    },
+    {
+      "id": 115,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 1.43
+    },
+    {
+      "id": 116,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 3.73
+    },
+    {
+      "id": 117,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 2.33
+    },
+    {
+      "id": 118,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 1.27
+    },
+    {
+      "id": 119,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 3.96
+    },
+    {
+      "id": 120,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 0.94
+    },
+    {
+      "id": 121,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 4.47
+    },
+    {
+      "id": 122,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 4.07
+    },
+    {
+      "id": 123,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 2.6
+    },
+    {
+      "id": 124,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 4.37
+    },
+    {
+      "id": 125,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 3.59
+    },
+    {
+      "id": 126,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 2.97
+    },
+    {
+      "id": 127,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 1.25
+    },
+    {
+      "id": 128,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 2.12
+    },
+    {
+      "id": 129,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 3.53
+    },
+    {
+      "id": 130,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 3.35
+    },
+    {
+      "id": 131,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 2.76
+    },
+    {
+      "id": 132,
+      "length": 100.0,
+      "width": 150.0,
+      "height": 100.0,
+      "weight": 0.82
+    },
+    {
+      "id": 133,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 2.02
+    },
+    {
+      "id": 134,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 3.51
+    },
+    {
+      "id": 135,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 4.93
+    },
+    {
+      "id": 136,
+      "length": 400.0,
+      "width": 600.0,
+      "height": 400.0,
+      "weight": 3.94
+    },
+    {
+      "id": 137,
+      "length": 300.0,
+      "width": 300.0,
+      "height": 300.0,
+      "weight": 1.25
+    },
+    {
+      "id": 138,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 2.83
+    },
+    {
+      "id": 139,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 3.66
+    },
+    {
+      "id": 140,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 3.06
+    },
+    {
+      "id": 141,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 3.51
+    },
+    {
+      "id": 142,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 3.36
+    },
+    {
+      "id": 143,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 4.85
+    },
+    {
+      "id": 144,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 1.93
+    },
+    {
+      "id": 145,
+      "length": 200.0,
+      "width": 200.0,
+      "height": 200.0,
+      "weight": 0.87
+    },
+    {
+      "id": 146,
+      "length": 220.0,
+      "width": 310.0,
+      "height": 200.0,
+      "weight": 2.68
+    },
+    {
+      "id": 147,
+      "length": 160.0,
+      "width": 220.0,
+      "height": 100.0,
+      "weight": 0.75
+    },
+    {
+      "id": 148,
+      "length": 300.0,
+      "width": 400.0,
+      "height": 250.0,
+      "weight": 4.33
+    },
+    {
+      "id": 149,
+      "length": 310.0,
+      "width": 430.0,
+      "height": 250.0,
+      "weight": 3.84
+    }
+  ]
+}
