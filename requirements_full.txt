@@ -1,0 +1,13 @@
+# Botko Box-Simulations requirements
+# For Raspberry Pi 4 overnight runs
+
+# Core dependencies
+numpy>=1.24.0
+httpx>=0.28.0
+
+# Optional: for visualization (not needed for overnight runs)
+# matplotlib>=3.7.0
+# pillow>=10.0.0
+
+# Testing
+pytest>=9.0.0

@@ -1,0 +1,19 @@
+[Unit]
+Description=Botko 3D Bin Packing Overnight Experiments
+After=network.target
+
+[Service]
+Type=simple
+User=louis
+WorkingDirectory=/home/louis/Box-Simulations-botko
+Environment="PATH=/home/louis/Box-Simulations-botko/venv/bin:/usr/bin"
+ExecStart=/home/louis/Box-Simulations-botko/venv/bin/python -m src.runner.experiment
+Nice=10
+CPUQuota=50%
+Restart=on-failure
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

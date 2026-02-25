@@ -1,0 +1,170 @@
+{
+  "metadata": {
+    "timestamp": "20260223_102129",
+    "smoke_test": true,
+    "n_datasets": 1,
+    "n_shuffles": 1,
+    "n_boxes": 20,
+    "botko_config": {
+      "bin_config": {
+        "length": 1200.0,
+        "width": 800.0,
+        "height": 2700.0,
+        "resolution": 10.0
+      },
+      "num_bins": 2,
+      "buffer_size": 8,
+      "pick_window": 4,
+      "close_policy": "close fullest after 4 rejects (min fill: 50%)",
+      "max_consecutive_rejects": 10,
+      "enable_stability": false,
+      "min_support_ratio": 0.8,
+      "allow_all_orientations": false
+    },
+    "top_5": []
+  },
+  "phase1_baseline": [
+    {
+      "total_boxes": 20,
+      "total_placed": 20,
+      "total_rejected": 0,
+      "remaining_boxes": 0,
+      "placement_rate": 1.0,
+      "pallets_closed": 0,
+      "avg_closed_fill": 0.0,
+      "avg_closed_effective_fill": 0.0,
+      "avg_closed_height": 0.0,
+      "closed_pallets": [],
+      "active_pallets": [
+        {
+          "bin_slot": 0,
+          "fill_rate": 0.054068,
+          "effective_fill": 0.583937,
+          "max_height": 250.0,
+          "boxes_placed": 11,
+          "placed_volume": 140145000.0,
+          "surface_roughness": 4.7188,
+          "support_mean": 1.0,
+          "support_min": 1.0,
+          "ms_per_box_mean": 0.064
+        },
+        {
+          "bin_slot": 1,
+          "fill_rate": 0.063791,
+          "effective_fill": 0.574115,
+          "max_height": 300.0,
+          "boxes_placed": 9,
+          "placed_volume": 165345000.0,
+          "surface_roughness": 3.8707,
+          "support_mean": 1.0,
+          "support_min": 1.0,
+          "ms_per_box_mean": 0.053
+        }
+      ],
+      "elapsed_ms": 114557.1,
+      "ms_per_box": 5727.85,
+      "consecutive_rejects_triggered": false,
+      "strategy": "walle_scoring",
+      "strategy_type": "single_bin",
+      "box_selector": "default",
+      "bin_selector": "emptiest_first",
+      "dataset_id": 0,
+      "shuffle_id": 0
+    },
+    {
+      "total_boxes": 20,
+      "total_placed": 20,
+      "total_rejected": 0,
+      "remaining_boxes": 0,
+      "placement_rate": 1.0,
+      "pallets_closed": 0,
+      "avg_closed_fill": 0.0,
+      "avg_closed_effective_fill": 0.0,
+      "avg_closed_height": 0.0,
+      "closed_pallets": [],
+      "active_pallets": [
+        {
+          "bin_slot": 0,
+          "fill_rate": 0.054068,
+          "effective_fill": 0.583937,
+          "max_height": 250.0,
+          "boxes_placed": 11,
+          "placed_volume": 140145000.0,
+          "surface_roughness": 4.447,
+          "support_mean": 1.0,
+          "support_min": 1.0,
+          "ms_per_box_mean": 0.069
+        },
+        {
+          "bin_slot": 1,
+          "fill_rate": 0.063791,
+          "effective_fill": 0.574115,
+          "max_height": 300.0,
+          "boxes_placed": 9,
+          "placed_volume": 165345000.0,
+          "surface_roughness": 4.5345,
+          "support_mean": 1.0,
+          "support_min": 1.0,
+          "ms_per_box_mean": 0.057
+        }
+      ],
+      "elapsed_ms": 22747.7,
+      "ms_per_box": 1137.39,
+      "consecutive_rejects_triggered": false,
+      "strategy": "baseline",
+      "strategy_type": "single_bin",
+      "box_selector": "default",
+      "bin_selector": "emptiest_first",
+      "dataset_id": 0,
+      "shuffle_id": 0
+    },
+    {
+      "total_boxes": 20,
+      "total_placed": 20,
+      "total_rejected": 0,
+      "remaining_boxes": 0,
+      "placement_rate": 1.0,
+      "pallets_closed": 0,
+      "avg_closed_fill": 0.0,
+      "avg_closed_effective_fill": 0.0,
+      "avg_closed_height": 0.0,
+      "closed_pallets": [],
+      "active_pallets": [
+        {
+          "bin_slot": 0,
+          "fill_rate": 0.068997,
+          "effective_fill": 0.338712,
+          "max_height": 550.0,
+          "boxes_placed": 16,
+          "placed_volume": 178840000.0,
+          "surface_roughness": 5.7224,
+          "support_mean": 1.0,
+          "support_min": 1.0,
+          "ms_per_box_mean": 0.101
+        },
+        {
+          "bin_slot": 1,
+          "fill_rate": 0.048862,
+          "effective_fill": 0.527708,
+          "max_height": 250.0,
+          "boxes_placed": 4,
+          "placed_volume": 126650000.0,
+          "surface_roughness": 2.2496,
+          "support_mean": 1.0,
+          "support_min": 1.0,
+          "ms_per_box_mean": 0.083
+        }
+      ],
+      "elapsed_ms": 7710.6,
+      "ms_per_box": 385.53,
+      "consecutive_rejects_triggered": false,
+      "strategy": "two_bounded_best_fit",
+      "strategy_type": "multi_bin",
+      "box_selector": "native",
+      "bin_selector": "native",
+      "dataset_id": 0,
+      "shuffle_id": 0
+    }
+  ],
+  "phase2_sweep": []
+}

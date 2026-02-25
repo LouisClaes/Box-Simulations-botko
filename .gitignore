@@ -1,43 +1,49 @@
 # Python
 __pycache__/
 *.py[cod]
-*.egg-info/
-*.egg
-dist/
+*$py.class
+*.so
+.Python
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
 .eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Virtual environments
+# Virtual environment
 venv/
-.venv/
 env/
+ENV/
+
+# Results and data
+results/
+*.log
+
+# Environment variables
+.env
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
-desktop.ini
 
-# Simulation outputs (large binary files)
-**/output/
-*.gif
-*.png
-*.jpg
-*.html
-
-# External cloned repos (large, have their own git history)
-external_repos/GOPT/
-external_repos/Online-3D-BPP-DRL/
-external_repos/Online-3D-BPP-PCT/
-external_repos/SIMPAC-2024-311/
-
-# Jupyter
-.ipynb_checkpoints/
-
-# Logs
-*.log
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/

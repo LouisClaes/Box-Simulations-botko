@@ -1,0 +1,113 @@
+======================================================
+Botko Overnight Runner - Validation Suite
+======================================================
+
+✓ Environment ready
+
+[TEST 1] Telegram Notification System
+------------------------------------------------------
+  ✅ Telegram notification sent successfully!
+
+[TEST 2] Smoke Test (20 boxes, 1 dataset, 3 strategies)
+------------------------------------------------------
+This validates:
+  - All strategies load correctly
+  - Closed pallets are counted
+  - Results are saved
+  - Resume capability works
+
+
+===========================================================================
+  BOTKO BV OVERNIGHT SWEEP -- SMOKE TEST
+===========================================================================
+  CPUs:        2 (50% for Raspberry Pi)
+  Output:      /home/louis/Box-Simulations-botko/output/botko_20260221_135928
+  Datasets:    1 x 20 Rajapack boxes, 1 shuffles
+  Single-bin:  3 strategies
+  Multi-bin:   1 strategies (two_bounded_best_fit)
+  Pallet:      1200x800x2700mm
+  Buffer:      8 boxes, pick window 4
+  Close:       height>=1800mm
+  Reject:      FIFO advance, front box exits (max 10 consecutive)
+  Stats:       only closed pallets count in avg fill rate
+  Telegram:    ENABLED
+
+  Generating 1 datasets...
+
+[PHASE 1] Baseline: all strategies with default selectors
+  Enqueuing 4 tasks...
+    1/4 (25%)
+    2/4 (50%)
+    3/4 (75%)
+    4/4 (100%)
+  Phase 1 completed in 176.7s.
+
+  Phase 1 Rankings (Avg Closed-Pallet Fill):
+  RANK  STRATEGY                            FILL  RUNS  PALS       TYPE
+  ----- -------------------------------- ------- ----- ----- ----------
+  1     surface_contact                   0.00%     1     0 single-bin <--
+  2     walle_scoring                     0.00%     1     0 single-bin <--
+  3     baseline                          0.00%     1     0 single-bin
+  4     two_bounded_best_fit              0.00%     1     0  multi-bin
+
+===========================================================================
+  OVERNIGHT SWEEP COMPLETE
+===========================================================================
+  Results saved to: /home/louis/Box-Simulations-botko/output/botko_20260221_135928/results.json
+  Total time: 176.7s (2.9 min)
+  ✅ Smoke test completed successfully!
+  ✅ Results saved to: output/botko_20260221_135928
+  ✅ Phase 1 results: 4 experiments
+  ✅ Total closed pallets: 0
+
+[TEST 3] Resume Capability
+------------------------------------------------------
+  Testing resume from: output/botko_20260221_135928/results.json
+  (This should skip already-completed experiments)
+
+
+[RESUME] Resuming from output/botko_20260221_135928/results.json
+
+===========================================================================
+  BOTKO BV OVERNIGHT SWEEP -- SMOKE TEST
+===========================================================================
+  CPUs:        2 (50% for Raspberry Pi)
+  Output:      /home/louis/Box-Simulations-botko/output/botko_20260221_135928
+  Datasets:    1 x 20 Rajapack boxes, 1 shuffles
+  Single-bin:  3 strategies
+  Multi-bin:   1 strategies (two_bounded_best_fit)
+  Pallet:      1200x800x2700mm
+  Buffer:      8 boxes, pick window 4
+  Close:       height>=1800mm
+  Reject:      FIFO advance, front box exits (max 10 consecutive)
+  Stats:       only closed pallets count in avg fill rate
+  Telegram:    ENABLED
+
+  Generating 1 datasets...
+
+[PHASE 1] Baseline: all strategies with default selectors
+  Enqueuing 0 tasks...
+  Phase 1 completed in 0.0s.
+
+  Phase 1 Rankings (Avg Closed-Pallet Fill):
+  RANK  STRATEGY                            FILL  RUNS  PALS       TYPE
+  ----- -------------------------------- ------- ----- ----- ----------
+  1     surface_contact                   0.00%     1     0 single-bin <--
+  2     walle_scoring                     0.00%     1     0 single-bin <--
+  3     baseline                          0.00%     1     0 single-bin
+  4     two_bounded_best_fit              0.00%     1     0  multi-bin
+
+===========================================================================
+  OVERNIGHT SWEEP COMPLETE
+===========================================================================
+  Results saved to: /home/louis/Box-Simulations-botko/output/botko_20260221_135928/results.json
+  Total time: 0.0s (0.0 min)
+  ✅ Resume test completed successfully!
+
+[TEST 4] Dataset Fairness (Same boxes for all strategies)
+------------------------------------------------------
+./test_and_validate.sh: line 240: warning: here-document at line 153 delimited by end-of-file (wanted `EOF')
+  File "<stdin>", line 37
+    EOF "$RESUME_PATH"
+        ^^^^^^^^^^^^^^
+SyntaxError: invalid syntax

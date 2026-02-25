@@ -1,0 +1,48 @@
+# Experiment Configuration for Box-Simulations-botko
+
+# Pallet specifications
+pallet:
+  length: 120.0  # cm
+  width: 80.0    # cm
+  height: 200.0  # cm (maximum stacking height)
+  max_weight: 1000.0  # kg
+
+# Box generation parameters
+box_generation:
+  min_length: 10.0
+  max_length: 60.0
+  min_width: 10.0
+  max_width: 50.0
+  min_height: 5.0
+  max_height: 40.0
+  min_weight: 1.0
+  max_weight: 50.0
+
+# Stability constraints
+stability:
+  cog_tolerance: 0.15  # Center of gravity must be within 15% of base
+  min_support_ratio: 0.75  # Box must have 75% bottom area supported
+  max_overhang_ratio: 0.25  # Maximum 25% overhang allowed
+
+# Packing constraints
+packing:
+  gap_penalty: 1.0  # Penalty for gaps between boxes
+  allow_rotation: true  # Allow box rotation during packing
+  rotation_angles: [0, 90]  # Allowed rotation angles (degrees)
+
+# Algorithm settings
+algorithms:
+  - name: "first_fit"
+    enabled: true
+  - name: "best_fit"
+    enabled: true
+  - name: "best_fit_with_rotation"
+    enabled: true
+
+# Experiment settings
+experiment:
+  num_experiments: 1000
+  boxes_per_experiment: 50
+  save_interval: 100  # Save results every N experiments
+  enable_telegram: true
+  telegram_update_interval: 50  # Send Telegram update every N experiments

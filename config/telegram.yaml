@@ -1,0 +1,31 @@
+# Telegram Notification Configuration
+
+# Bot settings (override with .env file)
+bot:
+  token_env_var: "TELEGRAM_BOT_TOKEN"
+  chat_id_env_var: "TELEGRAM_CHAT_ID"
+
+# Notification settings
+notifications:
+  # Send notifications at these milestones
+  milestones: [100, 250, 500, 750, 1000]
+
+  # Include these metrics in updates
+  metrics:
+    - total_experiments
+    - experiments_completed
+    - success_rate
+    - avg_packing_efficiency
+    - avg_pallets_used
+    - runtime_seconds
+
+  # Error notifications
+  errors:
+    send_on_error: true
+    max_errors_before_stop: 10
+
+  # Formatting
+  format:
+    use_markdown: true
+    include_timestamp: true
+    include_progress_bar: true
