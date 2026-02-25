@@ -1,0 +1,66 @@
+{
+  "strategy": "baseline",
+  "timestamp": "2026-02-18T23:13:36.291395",
+  "dataset": {
+    "n_boxes": 150,
+    "seed": 1001
+  },
+  "bin_config": {
+    "length": 1200.0,
+    "width": 800.0,
+    "height": 2700.0,
+    "resolution": 10.0
+  },
+  "aggregate": {
+    "n_runs": 3,
+    "mean_fill_rate": 0.725442,
+    "std_fill_rate": 0.025464,
+    "min_fill_rate": 0.696254,
+    "max_fill_rate": 0.743113,
+    "avg_sec_per_box": 0.343844,
+    "avg_computation_time_ms": 51576.55,
+    "avg_boxes_placed": 98.67,
+    "total_elapsed_s": 154.74
+  },
+  "runs": [
+    {
+      "run_index": 0,
+      "shuffle_seed": 10010000,
+      "fill_rate": 0.73696,
+      "boxes_placed": 98,
+      "boxes_rejected": 52,
+      "boxes_total": 150,
+      "max_height": 2700.0,
+      "computation_time_ms": 47942.59,
+      "sec_per_box": 0.319617,
+      "stability_rate": 0.6429,
+      "completed": true
+    },
+    {
+      "run_index": 1,
+      "shuffle_seed": 10010001,
+      "fill_rate": 0.696254,
+      "boxes_placed": 101,
+      "boxes_rejected": 49,
+      "boxes_total": 150,
+      "max_height": 2700.0,
+      "computation_time_ms": 52981.94,
+      "sec_per_box": 0.353213,
+      "stability_rate": 0.5347,
+      "completed": true
+    },
+    {
+      "run_index": 2,
+      "shuffle_seed": 10010002,
+      "fill_rate": 0.743113,
+      "boxes_placed": 97,
+      "boxes_rejected": 53,
+      "boxes_total": 150,
+      "max_height": 2700.0,
+      "computation_time_ms": 53805.11,
+      "sec_per_box": 0.358701,
+      "stability_rate": 0.6392,
+      "completed": true
+    }
+  ]
+}

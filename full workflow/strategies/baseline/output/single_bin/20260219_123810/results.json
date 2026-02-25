@@ -1,0 +1,251 @@
+{
+  "experiment": {
+    "strategy_name": "baseline",
+    "dataset_path": "",
+    "timestamp": "2026-02-19T12:38:10.715917",
+    "config": {
+      "bin": {
+        "length": 60.0,
+        "width": 40.0,
+        "height": 60.0,
+        "resolution": 1.0
+      },
+      "strategy_name": "baseline",
+      "dataset_path": "",
+      "enable_stability": false,
+      "min_support_ratio": 0.8,
+      "allow_all_orientations": false,
+      "render_3d": false,
+      "verbose": false
+    }
+  },
+  "metrics": {
+    "fill_rate": 0.08430524999999998,
+    "boxes_total": 5,
+    "boxes_placed": 5,
+    "boxes_rejected": 0,
+    "max_height": 21.9,
+    "computation_time_ms": 242.85,
+    "stability_rate": 1.0
+  },
+  "placements": [
+    {
+      "step": 0,
+      "box_id": 0,
+      "dims": [
+        21.0,
+        5.6,
+        11.9
+      ],
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 1,
+      "box_id": 1,
+      "dims": [
+        10.6,
+        23.4,
+        21.9
+      ],
+      "position": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 2,
+      "box_id": 2,
+      "dims": [
+        27.3,
+        7.2,
+        15.5
+      ],
+      "position": [
+        0.0,
+        29.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 3,
+      "box_id": 3,
+      "dims": [
+        5.7,
+        10.5,
+        17.6
+      ],
+      "position": [
+        11.0,
+        6.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 4,
+      "box_id": 4,
+      "dims": [
+        5.7,
+        10.0,
+        21.2
+      ],
+      "position": [
+        11.0,
+        16.0,
+        0.0
+      ],
+      "orientation": 0
+    }
+  ],
+  "step_log": [
+    {
+      "step": 0,
+      "box_id": 0,
+      "box_dims": [
+        21.0,
+        5.6,
+        11.9
+      ],
+      "success": true,
+      "fill_rate_after": 0.009718,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.165,
+      "placement": {
+        "step": 0,
+        "box_id": 0,
+        "dims": [
+          21.0,
+          5.6,
+          11.9
+        ],
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 1,
+      "box_id": 1,
+      "box_dims": [
+        10.6,
+        23.4,
+        21.9
+      ],
+      "success": true,
+      "fill_rate_after": 0.047441,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.204,
+      "placement": {
+        "step": 1,
+        "box_id": 1,
+        "dims": [
+          10.6,
+          23.4,
+          21.9
+        ],
+        "position": [
+          0.0,
+          6.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 2,
+      "box_id": 2,
+      "box_dims": [
+        27.3,
+        7.2,
+        15.5
+      ],
+      "success": true,
+      "fill_rate_after": 0.068599,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.109,
+      "placement": {
+        "step": 2,
+        "box_id": 2,
+        "dims": [
+          27.3,
+          7.2,
+          15.5
+        ],
+        "position": [
+          0.0,
+          29.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 3,
+      "box_id": 3,
+      "box_dims": [
+        5.7,
+        10.5,
+        17.6
+      ],
+      "success": true,
+      "fill_rate_after": 0.075914,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.109,
+      "placement": {
+        "step": 3,
+        "box_id": 3,
+        "dims": [
+          5.7,
+          10.5,
+          17.6
+        ],
+        "position": [
+          11.0,
+          6.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 4,
+      "box_id": 4,
+      "box_dims": [
+        5.7,
+        10.0,
+        21.2
+      ],
+      "success": true,
+      "fill_rate_after": 0.084305,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.182,
+      "placement": {
+        "step": 4,
+        "box_id": 4,
+        "dims": [
+          5.7,
+          10.0,
+          21.2
+        ],
+        "position": [
+          11.0,
+          16.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    }
+  ],
+  "completed": true
+}

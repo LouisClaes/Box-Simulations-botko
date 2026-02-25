@@ -2,13 +2,14 @@
 Skyline strategy -- height-profile-based 3D bin packing.
 
 This strategy builds a 1D "skyline profile" by projecting the heightmap onto
-the x-axis (taking the minimum height per column).  It then sorts positions
-by ascending height to identify the deepest valleys, and tries to fill them
-first.
+the y-axis (taking the mean height per y-band across all x columns).  It then
+sorts y-positions by ascending height to identify the lowest bands, and tries
+to fill them first.
 
-The intuition is simple: always fill the lowest gap.  This naturally produces
-uniform layers and minimises wasted vertical space, because each box is pushed
-into the deepest available depression before starting a new layer.
+The intuition is simple: always fill the lowest horizontal band.  This
+naturally produces uniform layers and minimises wasted vertical space,
+because each box is pushed into the lowest available band before starting a
+new layer.
 
 Scoring for each candidate position:
     score = -WEIGHT_Z * z
@@ -17,7 +18,7 @@ Scoring for each candidate position:
 
 where:
   * z             -- the resting height (lower is better)
-  * valley_fill   -- how much of the valley width the box covers (wider = better)
+  * valley_fill   -- how much of the valley depth the box covers (wider = better)
   * uniformity    -- negative variance of the footprint region after placement
 
 The strategy does NOT modify bin_state.
@@ -40,16 +41,16 @@ MIN_SUPPORT: float = 0.30
 
 # Scoring weights
 WEIGHT_Z: float = 3.0           # Strongly prefer lower placements
-WEIGHT_VALLEY_FILL: float = 1.5 # Reward covering more of the valley width
+WEIGHT_VALLEY_FILL: float = 1.5 # Reward covering more of the valley depth
 WEIGHT_UNIFORMITY: float = 0.5  # Reward uniform surface after placement
 
-# Maximum number of valley x-positions to try before giving up on the
+# Maximum number of valley y-positions to try before giving up on the
 # skyline approach and falling back to a full grid scan.
 MAX_VALLEY_CANDIDATES: int = 40
 
-# Step size multiplier -- how coarsely to scan y within each valley column.
+# Step size multiplier -- how coarsely to scan x within each valley band.
 # 1.0 means step = max(1, resolution), matching the baseline.
-Y_SCAN_STEP_MULT: float = 1.0
+X_SCAN_STEP_MULT: float = 1.0
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -61,11 +62,11 @@ class SkylineStrategy(BaseStrategy):
     """
     Skyline (valley-first) placement strategy.
 
-    1. Compute the skyline profile: for each x column, take the minimum
-       height across all y values.  This represents the "reachable floor"
-       at each x position.
-    2. Sort x positions by ascending skyline height (deepest valleys first).
-    3. For each valley x, try every allowed orientation and scan y positions
+    1. Compute the skyline profile: for each y-band, take the mean height
+       across all x columns.  This represents the average surface level at
+       each y position.
+    2. Sort y positions by ascending skyline height (lowest bands first).
+    3. For each valley y, try every allowed orientation and scan x positions
        to find valid placements.  Score each candidate by how low z is, how
        well the box fills the valley, and how uniform the surface will be
        after placement.
@@ -81,7 +82,7 @@ class SkylineStrategy(BaseStrategy):
     def on_episode_start(self, config: ExperimentConfig) -> None:
         """Store config and derive scan step from resolution."""
         super().on_episode_start(config)
-        self._scan_step = max(1.0, config.bin.resolution) * Y_SCAN_STEP_MULT
+        self._scan_step = max(1.0, config.bin.resolution) * X_SCAN_STEP_MULT
 
     # ── Main entry point ──────────────────────────────────────────────────
 
@@ -114,16 +115,16 @@ class SkylineStrategy(BaseStrategy):
         heightmap = bin_state.heightmap  # read-only reference
 
         # ── Step 1: Build the skyline profile ─────────────────────────────
-        # For each x column, the skyline height is the minimum height across
-        # all y cells in that column.  This tells us the "deepest reachable
-        # point" at each x.
-        skyline = np.min(heightmap, axis=1)  # shape: (grid_l,)
+        # For each y-band, the skyline height is the mean height across all
+        # x cells in that band.  This tells us the average surface level at
+        # each y, avoiding false valleys from single empty cells.
+        skyline = np.mean(heightmap, axis=0)  # shape: (grid_w,)
 
         # ── Step 2: Identify valley structure ─────────────────────────────
-        # Sort x grid indices by ascending skyline height.
+        # Sort y grid indices by ascending skyline height.
         valley_order = np.argsort(skyline)
 
-        # Convert grid x indices to real-world x coordinates
+        # Convert grid y indices to real-world y coordinates
         res = bin_cfg.resolution
 
         # ── Step 3: Search candidates ─────────────────────────────────────
@@ -133,17 +134,17 @@ class SkylineStrategy(BaseStrategy):
         # Track how many valley positions we have evaluated
         valleys_tried = 0
 
-        for gx_start in valley_order:
+        for gy_start in valley_order:
             if valleys_tried >= MAX_VALLEY_CANDIDATES:
                 break
 
-            x_start = float(gx_start) * res
-            valley_height = float(skyline[gx_start])
+            y_start = float(gy_start) * res
+            valley_height = float(skyline[gy_start])
 
-            # Compute the valley width: count contiguous columns at
-            # approximately the same height as this valley floor.
-            valley_width = self._measure_valley_width(
-                skyline, gx_start, valley_height, res,
+            # Compute the valley depth (along y): count contiguous y-bands
+            # at approximately the same height as this valley floor.
+            valley_depth = self._measure_valley_depth(
+                skyline, gy_start, valley_height, res,
             )
 
             for oidx, (ol, ow, oh) in enumerate(orientations):
@@ -151,39 +152,44 @@ class SkylineStrategy(BaseStrategy):
                 if ol > bin_cfg.length or ow > bin_cfg.width or oh > bin_cfg.height:
                     continue
 
-                # The box occupies x in [x_start, x_start + ol).
-                # Check that the right edge fits inside the bin.
-                if x_start + ol > bin_cfg.length + 1e-6:
+                # The box occupies y in [y_start, y_start + ow).
+                # Check that the far edge fits inside the bin.
+                if y_start + ow > bin_cfg.width + 1e-6:
                     continue
 
-                # Scan y positions within this x column
-                y = 0.0
-                while y + ow <= bin_cfg.width + 1e-6:
-                    z = bin_state.get_height_at(x_start, y, ol, ow)
+                # Scan x positions within this y-band
+                x = 0.0
+                while x + ol <= bin_cfg.length + 1e-6:
+                    z = bin_state.get_height_at(x, y_start, ol, ow)
 
                     # Height bounds
                     if z + oh > bin_cfg.height + 1e-6:
-                        y += step
+                        x += step
                         continue
 
                     # Anti-float support check
                     if z > 0.5:
-                        sr = bin_state.get_support_ratio(x_start, y, ol, ow, z)
+                        sr = bin_state.get_support_ratio(x, y_start, ol, ow, z)
                         if sr < MIN_SUPPORT:
-                            y += step
+                            x += step
                             continue
 
                     # Stricter stability when enabled
                     if cfg.enable_stability:
-                        sr = bin_state.get_support_ratio(x_start, y, ol, ow, z)
+                        sr = bin_state.get_support_ratio(x, y_start, ol, ow, z)
                         if sr < cfg.min_support_ratio:
-                            y += step
+                            x += step
                             continue
 
+                    # Margin check (box-to-box gap enforcement)
+                    if not bin_state.is_margin_clear(x, y_start, ol, ow, z, oh):
+                        x += step
+                        continue
+
                     # ── Score this candidate ──────────────────────────
-                    valley_fill = self._valley_fill_bonus(ol, valley_width)
+                    valley_fill = self._valley_fill_bonus(ow, valley_depth)
                     uniformity = self._uniformity_bonus(
-                        heightmap, x_start, y, ol, ow, oh, z, bin_cfg,
+                        heightmap, x, y_start, ol, ow, oh, z, bin_cfg,
                     )
 
                     score = (
@@ -194,9 +200,9 @@ class SkylineStrategy(BaseStrategy):
 
                     if score > best_score:
                         best_score = score
-                        best_candidate = (x_start, y, oidx)
+                        best_candidate = (x, y_start, oidx)
 
-                    y += step
+                    x += step
 
             valleys_tried += 1
 
@@ -210,55 +216,55 @@ class SkylineStrategy(BaseStrategy):
     # ── Helper methods ────────────────────────────────────────────────────
 
     @staticmethod
-    def _measure_valley_width(
+    def _measure_valley_depth(
         skyline: np.ndarray,
-        gx_center: int,
+        gy_center: int,
         valley_floor: float,
         resolution: float,
     ) -> float:
         """
-        Measure the width (in real-world units) of the valley around gx_center.
+        Measure the depth (in real-world units) of the valley around gy_center.
 
-        A valley is defined as a contiguous run of x columns whose skyline
+        A valley is defined as a contiguous run of y-bands whose skyline
         height is within one resolution unit of valley_floor.  We expand
-        left and right from gx_center.
+        left and right from gy_center.
 
         Args:
-            skyline:      1D array of min-heights per x column.
-            gx_center:    Grid x index at the valley's deepest point.
+            skyline:      1D array of mean-heights per y-band.
+            gy_center:    Grid y index at the valley's lowest point.
             valley_floor: Height at the valley floor.
             resolution:   Grid resolution (cm per cell).
 
         Returns:
-            Valley width in real-world units (cm).
+            Valley depth in real-world units (cm).
         """
         tolerance = resolution * 1.5
         n = len(skyline)
 
-        # Expand left
-        left = gx_center
+        # Expand backward (toward y=0)
+        left = gy_center
         while left > 0 and abs(skyline[left - 1] - valley_floor) <= tolerance:
             left -= 1
 
-        # Expand right
-        right = gx_center
+        # Expand forward (toward y=width)
+        right = gy_center
         while right < n - 1 and abs(skyline[right + 1] - valley_floor) <= tolerance:
             right += 1
 
-        # Width = number of columns * resolution
+        # Depth = number of bands * resolution
         return float(right - left + 1) * resolution
 
     @staticmethod
-    def _valley_fill_bonus(box_length: float, valley_width: float) -> float:
+    def _valley_fill_bonus(box_width: float, valley_depth: float) -> float:
         """
-        How much of the valley width the box covers.
+        How much of the valley depth the box covers.
 
         Returns a value in (0, 1].  A box that perfectly fills the valley
         scores 1.0.  A box wider than the valley is capped at 1.0.
         """
-        if valley_width <= 0:
+        if valley_depth <= 0:
             return 0.0
-        return min(box_length / valley_width, 1.0)
+        return min(box_width / valley_depth, 1.0)
 
     @staticmethod
     def _uniformity_bonus(

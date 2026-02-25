@@ -1,0 +1,6 @@
+﻿walle_scoring            : closed=2.7  rej=40.7  rej/closed=17.0  rej/total=9.2
+surface_contact          : closed=2.8  rej=37.5  rej/closed=14.2  rej/total=8.0
+best_fit_decreasing      : closed=2.8  rej=41.3  rej/closed=17.2  rej/total=9.3
+extreme_points           : closed=3.2  rej=31.8  rej/closed=10.0  rej/total=6.1
+baseline                 : closed=3.0  rej=44.5  rej/closed=15.9  rej/total=9.2
+heuristic_160            : closed=4.2  rej=45.8  rej/closed=11.2  rej/total=7.5

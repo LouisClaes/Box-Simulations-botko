@@ -65,7 +65,19 @@ class BinState:
         """
         Maximum height in the footprint [x, x+w) × [y, y+d).
         This is the z at which a box placed here would rest.
+
+        Returns config.height + 1.0 (a sentinel "no room" value) when the
+        footprint violates the wall margin, so all strategies' height checks
+        automatically skip those positions without any code changes.
         """
+        m = self.config.margin
+        eps = 1e-6
+        if m > 0:
+            if (x < m - eps or y < m - eps or
+                    x + w > self.config.length - m + eps or
+                    y + d > self.config.width - m + eps):
+                return self.config.height + 1.0
+
         gx = self._to_grid(x)
         gy = self._to_grid(y)
         gx_end = min(gx + self._to_grid(w), self.config.grid_l)
@@ -118,6 +130,45 @@ class BinState:
         dx = np.abs(np.diff(self.heightmap, axis=0))
         dy = np.abs(np.diff(self.heightmap, axis=1))
         return float(np.mean(dx) + np.mean(dy)) / 2.0
+
+    def is_margin_clear(
+        self, x: float, y: float, ol: float, ow: float, z: float, oh: float,
+    ) -> bool:
+        """
+        Return True if a box at (x, y, z) with footprint (ol, ow) and height oh
+        satisfies the required margin gap from every z-overlapping placed box.
+
+        Wall margins are already handled transparently by get_height_at() returning
+        a sentinel height; this method checks box-to-box gaps only.
+
+        Strategies MUST call this after get_height_at() and the height-limit check:
+
+            z = bin_state.get_height_at(x, y, ol, ow)
+            if z + oh > bin_cfg.height: continue
+            if not bin_state.is_margin_clear(x, y, ol, ow, z, oh): continue
+
+        Returns:
+            True  — gap is sufficient; position is margin-compliant.
+            False — at least one existing box is within margin distance at the
+                    same vertical level; skip this position.
+        """
+        m = self.config.margin
+        if m <= 0:
+            return True
+
+        eps = 1e-6
+        new_z_max = z + oh
+        for p in self.placed_boxes:
+            # Skip boxes with no z overlap. Stacked boxes (p.z_max == z) pass.
+            if p.z_max <= z + eps or p.z >= new_z_max - eps:
+                continue
+            # Expanded footprint intersection test (gap < margin in both axes).
+            if (x < p.x_max + m - eps and
+                    x + ol > p.x - m + eps and
+                    y < p.y_max + m - eps and
+                    y + ow > p.y - m + eps):
+                return False
+        return True
 
     def get_heightmap_copy(self) -> np.ndarray:
         """Safe copy of the heightmap for strategy use."""

@@ -295,6 +295,10 @@ class TwoBoundedBestFitStrategy(MultiBinStrategy):
                     if cfg.enable_stability and support_ratio < cfg.min_support_ratio:
                         continue
 
+                # Margin check (box-to-box gap enforcement)
+                if not bin_state.is_margin_clear(cx, cy, ol, ow, z, oh):
+                    continue
+
                 # Contact base ratio: fraction of footprint cells at exactly z
                 contact_base_ratio = self._compute_contact_base_ratio(
                     cx, cy, z, ol, ow, heightmap, bin_cfg, resolution

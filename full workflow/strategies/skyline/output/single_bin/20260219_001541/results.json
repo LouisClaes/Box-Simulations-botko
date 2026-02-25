@@ -1,0 +1,66 @@
+{
+  "strategy": "skyline",
+  "timestamp": "2026-02-19T00:16:56.434676",
+  "dataset": {
+    "n_boxes": 150,
+    "seed": 1001
+  },
+  "bin_config": {
+    "length": 1200.0,
+    "width": 800.0,
+    "height": 2700.0,
+    "resolution": 10.0
+  },
+  "aggregate": {
+    "n_runs": 3,
+    "mean_fill_rate": 0.561098,
+    "std_fill_rate": 0.069517,
+    "min_fill_rate": 0.481779,
+    "max_fill_rate": 0.611433,
+    "avg_sec_per_box": 0.166347,
+    "avg_computation_time_ms": 24952.02,
+    "avg_boxes_placed": 79.67,
+    "total_elapsed_s": 74.86
+  },
+  "runs": [
+    {
+      "run_index": 0,
+      "shuffle_seed": 10010000,
+      "fill_rate": 0.590083,
+      "boxes_placed": 86,
+      "boxes_rejected": 64,
+      "boxes_total": 150,
+      "max_height": 2700.0,
+      "computation_time_ms": 18363.03,
+      "sec_per_box": 0.12242,
+      "stability_rate": 0.6628,
+      "completed": true
+    },
+    {
+      "run_index": 1,
+      "shuffle_seed": 10010001,
+      "fill_rate": 0.481779,
+      "boxes_placed": 82,
+      "boxes_rejected": 68,
+      "boxes_total": 150,
+      "max_height": 2600.0,
+      "computation_time_ms": 30579.26,
+      "sec_per_box": 0.203862,
+      "stability_rate": 0.7195,
+      "completed": true
+    },
+    {
+      "run_index": 2,
+      "shuffle_seed": 10010002,
+      "fill_rate": 0.611433,
+      "boxes_placed": 71,
+      "boxes_rejected": 79,
+      "boxes_total": 150,
+      "max_height": 2700.0,
+      "computation_time_ms": 25913.76,
+      "sec_per_box": 0.172758,
+      "stability_rate": 0.6338,
+      "completed": true
+    }
+  ]
+}

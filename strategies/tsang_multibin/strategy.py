@@ -230,6 +230,10 @@ class TsangMultiBinStrategy(MultiBinStrategy):
                     if support < cfg.min_support_ratio:
                         continue
 
+                # Margin check (box-to-box gap enforcement)
+                if not bin_state.is_margin_clear(cx, cy, ol, ow, z, oh):
+                    continue
+
                 # ── Scoring ─────────────────────────────────────────────
                 # Contact ratio: bottom face cells matching z
                 contact_ratio = self._contact_ratio(

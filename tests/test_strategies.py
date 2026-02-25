@@ -70,17 +70,16 @@ def giant_box():
 
 
 @pytest.fixture
-def exact_floor_box():
-    """A box that exactly matches the bin footprint."""
-    return Box(id=2, length=1200.0, width=800.0, height=100.0, weight=1.0)
-
+def exact_floor_box(small_bin_config):
+    """A box that exactly matches the bin footprint inside the margins."""
+    m = small_bin_config.margin
+    return Box(id=2, length=small_bin_config.length - 2 * m, width=small_bin_config.width - 2 * m, height=100.0, weight=1.0)
 
 TOP3_STRATEGIES = [
     "online_bpp_heuristic",
     "gopt_heuristic",
     "pct_macs_heuristic",
 ]
-
 
 # ---------------------------------------------------------------------------
 # Helper: instantiate and initialise strategy
@@ -180,17 +179,18 @@ class TestOversizedBox:
 class TestExactFitBox:
     @pytest.mark.parametrize("strategy_name", TOP3_STRATEGIES)
     def test_exact_footprint_box_placed(
-        self, strategy_name, exp_config, empty_bin_state, exact_floor_box
+        self, strategy_name, exp_config, empty_bin_state, exact_floor_box, small_bin_config
     ):
-        """A box matching the bin footprint exactly should be placed at (0,0)."""
+        """A box matching the bin footprint exactly should be placed at (margin,margin)."""
         strategy = make_strategy(strategy_name, exp_config)
         decision = strategy.decide_placement(exact_floor_box, empty_bin_state)
         assert decision is not None, (
             f"{strategy_name}: failed to place a box that exactly fits the bin."
         )
-        # Must start at (0, 0) — it's the only valid position
-        assert decision.x == pytest.approx(0.0, abs=1.0)
-        assert decision.y == pytest.approx(0.0, abs=1.0)
+        # Must start at (margin, margin) — it's the only valid position
+        m = small_bin_config.margin
+        assert decision.x == pytest.approx(m, abs=1.0)
+        assert decision.y == pytest.approx(m, abs=1.0)
 
 
 # ---------------------------------------------------------------------------

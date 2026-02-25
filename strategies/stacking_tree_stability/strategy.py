@@ -332,6 +332,10 @@ class StackingTreeStabilityStrategy(BaseStrategy):
                     if support_ratio < cfg.min_support_ratio:
                         continue
 
+                # Margin check (box-to-box gap enforcement)
+                if not bin_state.is_margin_clear(cx, cy, ol, ow, z, oh):
+                    continue
+
                 # Stacking-tree stability check.
                 is_stable, stable_support = self._check_placement_stable(
                     cx, cy, z, ol, ow, oh, bin_state

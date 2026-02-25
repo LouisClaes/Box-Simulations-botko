@@ -181,15 +181,18 @@ class BinConfig:
     Physical dimensions and grid resolution of the stacking bin/pallet.
 
     Attributes:
-        length:     X-axis dimension (cm).
-        width:      Y-axis dimension (cm).
-        height:     Z-axis dimension (cm).
-        resolution: Grid cell size (cm per cell).  1.0 = 1:1 mapping.
+        length:     X-axis dimension (mm).
+        width:      Y-axis dimension (mm).
+        height:     Z-axis dimension (mm).
+        resolution: Grid cell size (mm per cell).
+        margin:     Minimum gap between boxes and between boxes and walls (mm).
+                    Enforced at all times by the simulator and all strategies.
     """
     length: float = 1200.0
     width: float = 800.0
     height: float = 2700.0
     resolution: float = 10.0
+    margin: float = 20.0
 
     @property
     def grid_l(self) -> int:
@@ -208,7 +211,8 @@ class BinConfig:
 
     def to_dict(self) -> dict:
         return {"length": self.length, "width": self.width,
-                "height": self.height, "resolution": self.resolution}
+                "height": self.height, "resolution": self.resolution,
+                "margin": self.margin}
 
     @classmethod
     def from_dict(cls, d: dict) -> "BinConfig":

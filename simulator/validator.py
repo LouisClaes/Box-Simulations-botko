@@ -1,21 +1,24 @@
 """
 Placement validator — pure-function physical constraint checking.
 
-All checks are stateless functions: they take the current heightmap
-and a proposed placement, returning True or raising a descriptive error.
+All checks are stateless functions: they take the current heightmap,
+placed boxes, and a proposed placement, returning True or raising an error.
 
 Checks (always enforced):
-  1. Bounds     — box must fit inside the bin on all axes
-  2. Overlap    — box z must match surface height (no clipping)
-  3. Floating   — ≥30% of base must be supported (prevents floating)
+  0. Margin    — box must be ≥ BinConfig.margin from walls (default 20 mm)
+  1. Bounds    — box must fit inside the bin on all axes
+  2. Overlap   — box z must match surface height (no clipping)
+  3. Floating  — ≥30% of base must be supported (prevents floating)
+  5. Box-gap   — ≥ BinConfig.margin gap from every z-overlapping placed box
 
 Optional checks:
-  4. Stability  — base support ratio ≥ configurable threshold (default 80%)
+  4. Stability — base support ratio ≥ configurable threshold (default 80%)
 """
 
 import numpy as np
+from typing import Optional, List
 
-from config import BinConfig
+from config import BinConfig, Placement
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -28,6 +31,10 @@ class PlacementError(Exception):
 
 class OutOfBoundsError(PlacementError):
     """Box extends outside the bin boundary."""
+
+
+class MarginViolationError(PlacementError):
+    """Box is closer than the required margin to a wall or another box."""
 
 
 class OverlapError(PlacementError):
@@ -67,6 +74,7 @@ def validate_placement(
     oriented_h: float,
     enable_stability: bool = False,
     min_support_ratio: float = 0.8,
+    placed_boxes: Optional[List[Placement]] = None,
 ) -> bool:
     """
     Validate a proposed placement against all physical constraints.
@@ -78,11 +86,13 @@ def validate_placement(
         oriented_l/w/h:    Oriented box dimensions.
         enable_stability:  Whether to check strict support ratio.
         min_support_ratio: Minimum supported base fraction (stability mode).
+        placed_boxes:      All currently placed boxes (for box-gap check).
 
     Returns:
         True if all checks pass.
 
     Raises:
+        MarginViolationError:    box is closer than margin to wall or other box.
         OutOfBoundsError:        box extends outside bin.
         OverlapError:            box clips into another box.
         FloatingError:           <30% of base is supported (always checked).
@@ -90,6 +100,28 @@ def validate_placement(
     """
     eps = 1e-6
     res = bin_config.resolution
+    margin = bin_config.margin
+
+    # ── 0. Wall-margin check ─────────────────────────────────────────────
+    if margin > 0:
+        if x < margin - eps:
+            raise MarginViolationError(
+                f"Too close to X=0 wall: x={x:.1f} < margin={margin:.1f}"
+            )
+        if y < margin - eps:
+            raise MarginViolationError(
+                f"Too close to Y=0 wall: y={y:.1f} < margin={margin:.1f}"
+            )
+        if x + oriented_l > bin_config.length - margin + eps:
+            raise MarginViolationError(
+                f"Too close to X={bin_config.length} wall: "
+                f"x+l={x + oriented_l:.1f} > {bin_config.length - margin:.1f}"
+            )
+        if y + oriented_w > bin_config.width - margin + eps:
+            raise MarginViolationError(
+                f"Too close to Y={bin_config.width} wall: "
+                f"y+w={y + oriented_w:.1f} > {bin_config.width - margin:.1f}"
+            )
 
     # ── 1. Bounds ────────────────────────────────────────────────────────
     if x < -eps or y < -eps or z < -eps:
@@ -141,5 +173,24 @@ def validate_placement(
             raise UnstablePlacementError(
                 f"Support {support_ratio:.0%} < required {min_support_ratio:.0%}"
             )
+
+    # ── 5. Box-to-box gap check ───────────────────────────────────────────
+    if margin > 0 and placed_boxes:
+        new_z_max = z + oriented_h
+        for p in placed_boxes:
+            # Skip boxes with no z-range overlap (fully below or fully above).
+            # Stacked boxes: p.z_max == z (B rests exactly on A) → skip.
+            if p.z_max <= z + eps or p.z >= new_z_max - eps:
+                continue
+            # Boxes share a z range — check xy proximity.
+            # Violation when expanded footprints intersect (gap < margin).
+            if (x < p.x_max + margin - eps and
+                    x + oriented_l > p.x - margin + eps and
+                    y < p.y_max + margin - eps and
+                    y + oriented_w > p.y - margin + eps):
+                raise MarginViolationError(
+                    f"Box too close to placed box {p.box_id}: "
+                    f"xy gap < required {margin:.1f} mm margin"
+                )
 
     return True

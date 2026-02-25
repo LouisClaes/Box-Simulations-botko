@@ -1,0 +1,372 @@
+{
+  "experiment": {
+    "mode": "botko_bv",
+    "strategy_name": "surface_contact",
+    "timestamp": "2026-02-19T18:13:46.903892",
+    "botko_params": {
+      "bins": 2,
+      "buffer_size": 8,
+      "pick_window": 4,
+      "pallet_mm": "1200\u00d7800\u00d72700"
+    }
+  },
+  "metrics": {
+    "total_boxes": 20,
+    "total_placed": 20,
+    "total_rejected": 0,
+    "placement_rate": 1.0,
+    "pallet_0": {
+      "fill_rate": 0.0625559413580247,
+      "boxes": 11,
+      "max_height": 300.0
+    },
+    "pallet_1": {
+      "fill_rate": 0.055302854938271605,
+      "boxes": 9,
+      "max_height": 550.0
+    },
+    "aggregate_fill": 0.058929398148148154
+  },
+  "step_log": [
+    {
+      "step": 0,
+      "box_id": 0,
+      "box_dims": [
+        160.0,
+        220.0,
+        100.0
+      ],
+      "pallet": 0,
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 0,
+      "placed": true
+    },
+    {
+      "step": 1,
+      "box_id": 1,
+      "box_dims": [
+        200.0,
+        200.0,
+        200.0
+      ],
+      "pallet": 1,
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 0,
+      "placed": true
+    },
+    {
+      "step": 2,
+      "box_id": 2,
+      "box_dims": [
+        220.0,
+        310.0,
+        200.0
+      ],
+      "pallet": 0,
+      "position": [
+        0.0,
+        490.0,
+        0.0
+      ],
+      "orientation": 0,
+      "placed": true
+    },
+    {
+      "step": 3,
+      "box_id": 3,
+      "box_dims": [
+        160.0,
+        220.0,
+        100.0
+      ],
+      "pallet": 1,
+      "position": [
+        0.0,
+        200.0,
+        0.0
+      ],
+      "orientation": 0,
+      "placed": true
+    },
+    {
+      "step": 4,
+      "box_id": 4,
+      "box_dims": [
+        100.0,
+        150.0,
+        100.0
+      ],
+      "pallet": 1,
+      "position": [
+        0.0,
+        420.0,
+        0.0
+      ],
+      "orientation": 1,
+      "placed": true
+    },
+    {
+      "step": 5,
+      "box_id": 5,
+      "box_dims": [
+        310.0,
+        430.0,
+        250.0
+      ],
+      "pallet": 1,
+      "position": [
+        770.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 1,
+      "placed": true
+    },
+    {
+      "step": 6,
+      "box_id": 6,
+      "box_dims": [
+        100.0,
+        150.0,
+        100.0
+      ],
+      "pallet": 0,
+      "position": [
+        0.0,
+        220.0,
+        0.0
+      ],
+      "orientation": 1,
+      "placed": true
+    },
+    {
+      "step": 7,
+      "box_id": 7,
+      "box_dims": [
+        300.0,
+        400.0,
+        250.0
+      ],
+      "pallet": 0,
+      "position": [
+        220.0,
+        500.0,
+        0.0
+      ],
+      "orientation": 1,
+      "placed": true
+    },
+    {
+      "step": 8,
+      "box_id": 8,
+      "box_dims": [
+        200.0,
+        200.0,
+        200.0
+      ],
+      "pallet": 1,
+      "position": [
+        200.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 0,
+      "placed": true
+    },
+    {
+      "step": 9,
+      "box_id": 9,
+      "box_dims": [
+        100.0,
+        150.0,
+        100.0
+      ],
+      "pallet": 0,
+      "position": [
+        0.0,
+        320.0,
+        0.0
+      ],
+      "orientation": 1,
+      "placed": true
+    },
+    {
+      "step": 10,
+      "box_id": 10,
+      "box_dims": [
+        220.0,
+        310.0,
+        200.0
+      ],
+      "pallet": 0,
+      "position": [
+        620.0,
+        490.0,
+        0.0
+      ],
+      "orientation": 0,
+      "placed": true
+    },
+    {
+      "step": 11,
+      "box_id": 11,
+      "box_dims": [
+        300.0,
+        300.0,
+        300.0
+      ],
+      "pallet": 1,
+      "position": [
+        900.0,
+        310.0,
+        0.0
+      ],
+      "orientation": 0,
+      "placed": true
+    },
+    {
+      "step": 12,
+      "box_id": 12,
+      "box_dims": [
+        310.0,
+        430.0,
+        250.0
+      ],
+      "pallet": 0,
+      "position": [
+        770.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 1,
+      "placed": true
+    },
+    {
+      "step": 13,
+      "box_id": 13,
+      "box_dims": [
+        300.0,
+        300.0,
+        300.0
+      ],
+      "pallet": 1,
+      "position": [
+        470.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 0,
+      "placed": true
+    },
+    {
+      "step": 14,
+      "box_id": 14,
+      "box_dims": [
+        300.0,
+        400.0,
+        250.0
+      ],
+      "pallet": 0,
+      "position": [
+        370.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 1,
+      "placed": true
+    },
+    {
+      "step": 15,
+      "box_id": 15,
+      "box_dims": [
+        300.0,
+        300.0,
+        300.0
+      ],
+      "pallet": 1,
+      "position": [
+        900.0,
+        0.0,
+        250.0
+      ],
+      "orientation": 0,
+      "placed": true
+    },
+    {
+      "step": 16,
+      "box_id": 16,
+      "box_dims": [
+        100.0,
+        150.0,
+        100.0
+      ],
+      "pallet": 0,
+      "position": [
+        160.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 0,
+      "placed": true
+    },
+    {
+      "step": 17,
+      "box_id": 17,
+      "box_dims": [
+        160.0,
+        220.0,
+        100.0
+      ],
+      "pallet": 0,
+      "position": [
+        0.0,
+        640.0,
+        200.0
+      ],
+      "orientation": 1,
+      "placed": true
+    },
+    {
+      "step": 18,
+      "box_id": 18,
+      "box_dims": [
+        300.0,
+        400.0,
+        250.0
+      ],
+      "pallet": 0,
+      "position": [
+        900.0,
+        310.0,
+        0.0
+      ],
+      "orientation": 0,
+      "placed": true
+    },
+    {
+      "step": 19,
+      "box_id": 19,
+      "box_dims": [
+        200.0,
+        200.0,
+        200.0
+      ],
+      "pallet": 1,
+      "position": [
+        1000.0,
+        300.0,
+        300.0
+      ],
+      "orientation": 0,
+      "placed": true
+    }
+  ]
+}

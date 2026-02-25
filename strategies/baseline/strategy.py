@@ -99,6 +99,11 @@ class BaselineStrategy(BaseStrategy):
                             y += step
                             continue
 
+                    # Margin check (box-to-box gap enforcement)
+                    if not bin_state.is_margin_clear(x, y, ol, ow, z, oh):
+                        y += step
+                        continue
+
                     candidate = (z, x, y, oidx)
                     if best is None or candidate < best:
                         best = candidate

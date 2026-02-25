@@ -406,6 +406,11 @@ class WallBuildingStrategy(BaseStrategy):
                             y += step
                             continue
 
+                    # Margin check (box-to-box gap enforcement)
+                    if not bin_state.is_margin_clear(x, y, ol, ow, z, oh):
+                        y += step
+                        continue
+
                     # Compute wall-building score
                     score = self._compute_score(
                         x, y, z, ol, ow, oh, bin_state, bin_cfg, heightmap,
@@ -637,6 +642,11 @@ class WallBuildingStrategy(BaseStrategy):
                         if sr < cfg.min_support_ratio:
                             y += step
                             continue
+
+                    # Margin check (box-to-box gap enforcement)
+                    if not bin_state.is_margin_clear(x, y, ol, ow, z, oh):
+                        y += step
+                        continue
 
                     candidate = (z, x, y, oidx)
                     if best is None or candidate < best:

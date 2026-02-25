@@ -1,0 +1,11 @@
+{
+  "metadata": {
+    "timestamp": "20260219_220155",
+    "smoke_test": true,
+    "n_datasets": 2,
+    "n_shuffles": 2,
+    "top_5": []
+  },
+  "phase1_baseline": [],
+  "phase2_sweep": []
+}

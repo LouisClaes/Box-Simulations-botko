@@ -1,0 +1,1554 @@
+{
+  "experiment": {
+    "strategy_name": "skyline",
+    "dataset_path": "dataset\\generated_40_42.json",
+    "timestamp": "2026-02-25T17:24:01.927648",
+    "config": {
+      "bin": {
+        "length": 1200.0,
+        "width": 800.0,
+        "height": 2700.0,
+        "resolution": 10.0,
+        "margin": 20.0
+      },
+      "strategy_name": "skyline",
+      "dataset_path": "dataset\\generated_40_42.json",
+      "enable_stability": false,
+      "min_support_ratio": 0.8,
+      "allow_all_orientations": false,
+      "render_3d": true,
+      "verbose": true
+    }
+  },
+  "metrics": {
+    "fill_rate": 0.49731144509529324,
+    "boxes_total": 40,
+    "boxes_placed": 33,
+    "boxes_rejected": 7,
+    "max_height": 2683.5,
+    "computation_time_ms": 11739.61,
+    "stability_rate": 0.48484848484848486
+  },
+  "placements": [
+    {
+      "step": 0,
+      "box_id": 0,
+      "dims": [
+        207.5,
+        391.8,
+        282.5
+      ],
+      "position": [
+        20.0,
+        20.0,
+        0.0
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 1,
+      "box_id": 1,
+      "dims": [
+        420.9,
+        267.0,
+        403.0
+      ],
+      "position": [
+        20.0,
+        500.0,
+        0.0
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 2,
+      "box_id": 2,
+      "dims": [
+        467.7,
+        226.1,
+        326.6
+      ],
+      "position": [
+        470.0,
+        430.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 3,
+      "box_id": 3,
+      "dims": [
+        208.9,
+        265.6,
+        351.6
+      ],
+      "position": [
+        960.0,
+        410.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 4,
+      "box_id": 4,
+      "dims": [
+        208.0,
+        259.7,
+        395.0
+      ],
+      "position": [
+        250.0,
+        40.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 5,
+      "box_id": 5,
+      "dims": [
+        363.5,
+        266.1,
+        376.8
+      ],
+      "position": [
+        480.0,
+        20.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 6,
+      "box_id": 6,
+      "dims": [
+        201.9,
+        442.8,
+        441.7
+      ],
+      "position": [
+        20.0,
+        30.0,
+        282.5
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 7,
+      "box_id": 7,
+      "dims": [
+        409.4,
+        302.1,
+        246.6
+      ],
+      "position": [
+        470.0,
+        350.0,
+        326.6
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 8,
+      "box_id": 8,
+      "dims": [
+        487.2,
+        301.0,
+        227.8
+      ],
+      "position": [
+        480.0,
+        20.0,
+        376.8
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 9,
+      "box_id": 9,
+      "dims": [
+        454.2,
+        229.0,
+        381.1
+      ],
+      "position": [
+        250.0,
+        470.0,
+        573.2
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 10,
+      "box_id": 10,
+      "dims": [
+        442.1,
+        418.9,
+        360.9
+      ],
+      "position": [
+        250.0,
+        20.0,
+        604.6
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 11,
+      "box_id": 11,
+      "dims": [
+        313.6,
+        491.9,
+        365.6
+      ],
+      "position": [
+        730.0,
+        20.0,
+        604.6
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 12,
+      "box_id": 12,
+      "dims": [
+        448.8,
+        385.6,
+        458.5
+      ],
+      "position": [
+        20.0,
+        20.0,
+        965.5
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 14,
+      "box_id": 14,
+      "dims": [
+        268.4,
+        286.8,
+        223.9
+      ],
+      "position": [
+        90.0,
+        460.0,
+        954.3000000000001
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 15,
+      "box_id": 15,
+      "dims": [
+        269.8,
+        230.3,
+        283.4
+      ],
+      "position": [
+        900.0,
+        540.0,
+        351.6
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 16,
+      "box_id": 16,
+      "dims": [
+        390.7,
+        309.4,
+        311.1
+      ],
+      "position": [
+        20.0,
+        450.0,
+        1178.2
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 17,
+      "box_id": 17,
+      "dims": [
+        262.9,
+        280.1,
+        481.0
+      ],
+      "position": [
+        440.0,
+        460.0,
+        954.3000000000001
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 18,
+      "box_id": 18,
+      "dims": [
+        394.4,
+        382.7,
+        251.3
+      ],
+      "position": [
+        730.0,
+        340.0,
+        970.2
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 19,
+      "box_id": 19,
+      "dims": [
+        418.7,
+        249.0,
+        313.8
+      ],
+      "position": [
+        490.0,
+        20.0,
+        970.2
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 20,
+      "box_id": 20,
+      "dims": [
+        496.9,
+        392.0,
+        367.1
+      ],
+      "position": [
+        490.0,
+        20.0,
+        1284.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 22,
+      "box_id": 22,
+      "dims": [
+        268.7,
+        209.6,
+        294.6
+      ],
+      "position": [
+        730.0,
+        440.0,
+        1221.5
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 23,
+      "box_id": 23,
+      "dims": [
+        263.3,
+        280.3,
+        482.9
+      ],
+      "position": [
+        20.0,
+        20.0,
+        1424.0
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 24,
+      "box_id": 24,
+      "dims": [
+        462.9,
+        294.4,
+        396.6
+      ],
+      "position": [
+        20.0,
+        440.0,
+        1489.3000000000002
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 25,
+      "box_id": 25,
+      "dims": [
+        474.4,
+        318.7,
+        337.7
+      ],
+      "position": [
+        510.0,
+        440.0,
+        1516.1
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 26,
+      "box_id": 26,
+      "dims": [
+        274.0,
+        279.5,
+        368.4
+      ],
+      "position": [
+        310.0,
+        140.0,
+        1651.1
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 27,
+      "box_id": 27,
+      "dims": [
+        375.4,
+        278.8,
+        469.3
+      ],
+      "position": [
+        610.0,
+        90.0,
+        1651.1
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 28,
+      "box_id": 28,
+      "dims": [
+        319.8,
+        265.8,
+        499.3
+      ],
+      "position": [
+        610.0,
+        430.0,
+        1853.8
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 29,
+      "box_id": 29,
+      "dims": [
+        227.3,
+        352.9,
+        214.1
+      ],
+      "position": [
+        20.0,
+        420.0,
+        1885.9
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 30,
+      "box_id": 30,
+      "dims": [
+        232.9,
+        388.2,
+        437.6
+      ],
+      "position": [
+        270.0,
+        80.0,
+        2019.5
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 31,
+      "box_id": 31,
+      "dims": [
+        219.1,
+        326.6,
+        314.5
+      ],
+      "position": [
+        20.0,
+        20.0,
+        1906.9
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 32,
+      "box_id": 32,
+      "dims": [
+        498.8,
+        358.7,
+        491.3
+      ],
+      "position": [
+        530.0,
+        50.0,
+        2120.4
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 33,
+      "box_id": 33,
+      "dims": [
+        458.2,
+        203.4,
+        416.2
+      ],
+      "position": [
+        20.0,
+        490.0,
+        2100.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 35,
+      "box_id": 35,
+      "dims": [
+        392.3,
+        233.5,
+        330.4
+      ],
+      "position": [
+        530.0,
+        430.0,
+        2353.1
+      ],
+      "orientation": 0
+    }
+  ],
+  "step_log": [
+    {
+      "step": 0,
+      "box_id": 0,
+      "box_dims": [
+        391.8,
+        207.5,
+        282.5
+      ],
+      "success": true,
+      "fill_rate_after": 0.008861,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.144,
+      "placement": {
+        "step": 0,
+        "box_id": 0,
+        "dims": [
+          207.5,
+          391.8,
+          282.5
+        ],
+        "position": [
+          20.0,
+          20.0,
+          0.0
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 1,
+      "box_id": 1,
+      "box_dims": [
+        267.0,
+        420.9,
+        403.0
+      ],
+      "success": true,
+      "fill_rate_after": 0.026333,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.218,
+      "placement": {
+        "step": 1,
+        "box_id": 1,
+        "dims": [
+          420.9,
+          267.0,
+          403.0
+        ],
+        "position": [
+          20.0,
+          500.0,
+          0.0
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 2,
+      "box_id": 2,
+      "box_dims": [
+        467.7,
+        226.1,
+        326.6
+      ],
+      "success": true,
+      "fill_rate_after": 0.039658,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.179,
+      "placement": {
+        "step": 2,
+        "box_id": 2,
+        "dims": [
+          467.7,
+          226.1,
+          326.6
+        ],
+        "position": [
+          470.0,
+          430.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 3,
+      "box_id": 3,
+      "box_dims": [
+        208.9,
+        265.6,
+        351.6
+      ],
+      "success": true,
+      "fill_rate_after": 0.047184,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.099,
+      "placement": {
+        "step": 3,
+        "box_id": 3,
+        "dims": [
+          208.9,
+          265.6,
+          351.6
+        ],
+        "position": [
+          960.0,
+          410.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 4,
+      "box_id": 4,
+      "box_dims": [
+        208.0,
+        259.7,
+        395.0
+      ],
+      "success": true,
+      "fill_rate_after": 0.055416,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.109,
+      "placement": {
+        "step": 4,
+        "box_id": 4,
+        "dims": [
+          208.0,
+          259.7,
+          395.0
+        ],
+        "position": [
+          250.0,
+          40.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 5,
+      "box_id": 5,
+      "box_dims": [
+        363.5,
+        266.1,
+        376.8
+      ],
+      "success": true,
+      "fill_rate_after": 0.069477,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.128,
+      "placement": {
+        "step": 5,
+        "box_id": 5,
+        "dims": [
+          363.5,
+          266.1,
+          376.8
+        ],
+        "position": [
+          480.0,
+          20.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 6,
+      "box_id": 6,
+      "box_dims": [
+        442.8,
+        201.9,
+        441.7
+      ],
+      "success": true,
+      "fill_rate_after": 0.084712,
+      "support_ratio": 0.8636,
+      "elapsed_ms": 0.318,
+      "placement": {
+        "step": 6,
+        "box_id": 6,
+        "dims": [
+          201.9,
+          442.8,
+          441.7
+        ],
+        "position": [
+          20.0,
+          30.0,
+          282.5
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 7,
+      "box_id": 7,
+      "box_dims": [
+        409.4,
+        302.1,
+        246.6
+      ],
+      "success": true,
+      "fill_rate_after": 0.096479,
+      "support_ratio": 0.7333,
+      "elapsed_ms": 0.2,
+      "placement": {
+        "step": 7,
+        "box_id": 7,
+        "dims": [
+          409.4,
+          302.1,
+          246.6
+        ],
+        "position": [
+          470.0,
+          350.0,
+          326.6
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 8,
+      "box_id": 8,
+      "box_dims": [
+        487.2,
+        301.0,
+        227.8
+      ],
+      "success": true,
+      "fill_rate_after": 0.109367,
+      "support_ratio": 0.6612,
+      "elapsed_ms": 0.256,
+      "placement": {
+        "step": 8,
+        "box_id": 8,
+        "dims": [
+          487.2,
+          301.0,
+          227.8
+        ],
+        "position": [
+          480.0,
+          20.0,
+          376.8
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 9,
+      "box_id": 9,
+      "box_dims": [
+        229.0,
+        454.2,
+        381.1
+      ],
+      "success": true,
+      "fill_rate_after": 0.12466,
+      "support_ratio": 0.4,
+      "elapsed_ms": 0.256,
+      "placement": {
+        "step": 9,
+        "box_id": 9,
+        "dims": [
+          454.2,
+          229.0,
+          381.1
+        ],
+        "position": [
+          250.0,
+          470.0,
+          573.2
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 10,
+      "box_id": 10,
+      "box_dims": [
+        442.1,
+        418.9,
+        360.9
+      ],
+      "success": true,
+      "fill_rate_after": 0.150446,
+      "support_ratio": 0.3409,
+      "elapsed_ms": 0.186,
+      "placement": {
+        "step": 10,
+        "box_id": 10,
+        "dims": [
+          442.1,
+          418.9,
+          360.9
+        ],
+        "position": [
+          250.0,
+          20.0,
+          604.6
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 11,
+      "box_id": 11,
+      "box_dims": [
+        491.9,
+        313.6,
+        365.6
+      ],
+      "success": true,
+      "fill_rate_after": 0.172204,
+      "support_ratio": 0.474,
+      "elapsed_ms": 0.207,
+      "placement": {
+        "step": 11,
+        "box_id": 11,
+        "dims": [
+          313.6,
+          491.9,
+          365.6
+        ],
+        "position": [
+          730.0,
+          20.0,
+          604.6
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 12,
+      "box_id": 12,
+      "box_dims": [
+        448.8,
+        385.6,
+        458.5
+      ],
+      "success": true,
+      "fill_rate_after": 0.202816,
+      "support_ratio": 0.4889,
+      "elapsed_ms": 0.238,
+      "placement": {
+        "step": 12,
+        "box_id": 12,
+        "dims": [
+          448.8,
+          385.6,
+          458.5
+        ],
+        "position": [
+          20.0,
+          20.0,
+          965.5
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 13,
+      "box_id": 13,
+      "box_dims": [
+        373.2,
+        411.4,
+        213.7
+      ],
+      "success": false,
+      "fill_rate_after": 0.0,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.0,
+      "rejection_reason": "Strategy found no valid placement"
+    },
+    {
+      "step": 14,
+      "box_id": 14,
+      "box_dims": [
+        268.4,
+        286.8,
+        223.9
+      ],
+      "success": true,
+      "fill_rate_after": 0.209465,
+      "support_ratio": 0.3231,
+      "elapsed_ms": 0.273,
+      "placement": {
+        "step": 14,
+        "box_id": 14,
+        "dims": [
+          268.4,
+          286.8,
+          223.9
+        ],
+        "position": [
+          90.0,
+          460.0,
+          954.3000000000001
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 15,
+      "box_id": 15,
+      "box_dims": [
+        269.8,
+        230.3,
+        283.4
+      ],
+      "success": true,
+      "fill_rate_after": 0.216259,
+      "support_ratio": 0.4734,
+      "elapsed_ms": 0.281,
+      "placement": {
+        "step": 15,
+        "box_id": 15,
+        "dims": [
+          269.8,
+          230.3,
+          283.4
+        ],
+        "position": [
+          900.0,
+          540.0,
+          351.6
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 16,
+      "box_id": 16,
+      "box_dims": [
+        390.7,
+        309.4,
+        311.1
+      ],
+      "success": true,
+      "fill_rate_after": 0.230768,
+      "support_ratio": 0.6476,
+      "elapsed_ms": 0.275,
+      "placement": {
+        "step": 16,
+        "box_id": 16,
+        "dims": [
+          390.7,
+          309.4,
+          311.1
+        ],
+        "position": [
+          20.0,
+          450.0,
+          1178.2
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 17,
+      "box_id": 17,
+      "box_dims": [
+        262.9,
+        280.1,
+        481.0
+      ],
+      "success": true,
+      "fill_rate_after": 0.244433,
+      "support_ratio": 0.8214,
+      "elapsed_ms": 0.461,
+      "placement": {
+        "step": 17,
+        "box_id": 17,
+        "dims": [
+          262.9,
+          280.1,
+          481.0
+        ],
+        "position": [
+          440.0,
+          460.0,
+          954.3000000000001
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 18,
+      "box_id": 18,
+      "box_dims": [
+        394.4,
+        382.7,
+        251.3
+      ],
+      "success": true,
+      "fill_rate_after": 0.259067,
+      "support_ratio": 0.3556,
+      "elapsed_ms": 0.239,
+      "placement": {
+        "step": 18,
+        "box_id": 18,
+        "dims": [
+          394.4,
+          382.7,
+          251.3
+        ],
+        "position": [
+          730.0,
+          340.0,
+          970.2
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 19,
+      "box_id": 19,
+      "box_dims": [
+        418.7,
+        249.0,
+        313.8
+      ],
+      "success": true,
+      "fill_rate_after": 0.271688,
+      "support_ratio": 0.9048,
+      "elapsed_ms": 0.182,
+      "placement": {
+        "step": 19,
+        "box_id": 19,
+        "dims": [
+          418.7,
+          249.0,
+          313.8
+        ],
+        "position": [
+          490.0,
+          20.0,
+          970.2
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 20,
+      "box_id": 20,
+      "box_dims": [
+        496.9,
+        392.0,
+        367.1
+      ],
+      "success": true,
+      "fill_rate_after": 0.299275,
+      "support_ratio": 0.5385,
+      "elapsed_ms": 0.223,
+      "placement": {
+        "step": 20,
+        "box_id": 20,
+        "dims": [
+          496.9,
+          392.0,
+          367.1
+        ],
+        "position": [
+          490.0,
+          20.0,
+          1284.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 21,
+      "box_id": 21,
+      "box_dims": [
+        405.4,
+        452.9,
+        432.8
+      ],
+      "success": false,
+      "fill_rate_after": 0.0,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.0,
+      "rejection_reason": "Strategy found no valid placement"
+    },
+    {
+      "step": 22,
+      "box_id": 22,
+      "box_dims": [
+        268.7,
+        209.6,
+        294.6
+      ],
+      "success": true,
+      "fill_rate_after": 0.305676,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.542,
+      "placement": {
+        "step": 22,
+        "box_id": 22,
+        "dims": [
+          268.7,
+          209.6,
+          294.6
+        ],
+        "position": [
+          730.0,
+          440.0,
+          1221.5
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 23,
+      "box_id": 23,
+      "box_dims": [
+        280.3,
+        263.3,
+        482.9
+      ],
+      "success": true,
+      "fill_rate_after": 0.319426,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.231,
+      "placement": {
+        "step": 23,
+        "box_id": 23,
+        "dims": [
+          263.3,
+          280.3,
+          482.9
+        ],
+        "position": [
+          20.0,
+          20.0,
+          1424.0
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 24,
+      "box_id": 24,
+      "box_dims": [
+        462.9,
+        294.4,
+        396.6
+      ],
+      "success": true,
+      "fill_rate_after": 0.340278,
+      "support_ratio": 0.8186,
+      "elapsed_ms": 0.154,
+      "placement": {
+        "step": 24,
+        "box_id": 24,
+        "dims": [
+          462.9,
+          294.4,
+          396.6
+        ],
+        "position": [
+          20.0,
+          440.0,
+          1489.3000000000002
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 25,
+      "box_id": 25,
+      "box_dims": [
+        318.7,
+        474.4,
+        337.7
+      ],
+      "success": true,
+      "fill_rate_after": 0.359976,
+      "support_ratio": 0.3491,
+      "elapsed_ms": 0.201,
+      "placement": {
+        "step": 25,
+        "box_id": 25,
+        "dims": [
+          474.4,
+          318.7,
+          337.7
+        ],
+        "position": [
+          510.0,
+          440.0,
+          1516.1
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 26,
+      "box_id": 26,
+      "box_dims": [
+        279.5,
+        274.0,
+        368.4
+      ],
+      "success": true,
+      "fill_rate_after": 0.370861,
+      "support_ratio": 0.3214,
+      "elapsed_ms": 0.263,
+      "placement": {
+        "step": 26,
+        "box_id": 26,
+        "dims": [
+          274.0,
+          279.5,
+          368.4
+        ],
+        "position": [
+          310.0,
+          140.0,
+          1651.1
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 27,
+      "box_id": 27,
+      "box_dims": [
+        278.8,
+        375.4,
+        469.3
+      ],
+      "success": true,
+      "fill_rate_after": 0.389811,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.185,
+      "placement": {
+        "step": 27,
+        "box_id": 27,
+        "dims": [
+          375.4,
+          278.8,
+          469.3
+        ],
+        "position": [
+          610.0,
+          90.0,
+          1651.1
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 28,
+      "box_id": 28,
+      "box_dims": [
+        319.8,
+        265.8,
+        499.3
+      ],
+      "success": true,
+      "fill_rate_after": 0.406185,
+      "support_ratio": 0.963,
+      "elapsed_ms": 0.176,
+      "placement": {
+        "step": 28,
+        "box_id": 28,
+        "dims": [
+          319.8,
+          265.8,
+          499.3
+        ],
+        "position": [
+          610.0,
+          430.0,
+          1853.8
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 29,
+      "box_id": 29,
+      "box_dims": [
+        352.9,
+        227.3,
+        214.1
+      ],
+      "success": true,
+      "fill_rate_after": 0.41281,
+      "support_ratio": 0.8286,
+      "elapsed_ms": 0.16,
+      "placement": {
+        "step": 29,
+        "box_id": 29,
+        "dims": [
+          227.3,
+          352.9,
+          214.1
+        ],
+        "position": [
+          20.0,
+          420.0,
+          1885.9
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 30,
+      "box_id": 30,
+      "box_dims": [
+        232.9,
+        388.2,
+        437.6
+      ],
+      "success": true,
+      "fill_rate_after": 0.428074,
+      "support_ratio": 0.5931,
+      "elapsed_ms": 0.261,
+      "placement": {
+        "step": 30,
+        "box_id": 30,
+        "dims": [
+          232.9,
+          388.2,
+          437.6
+        ],
+        "position": [
+          270.0,
+          80.0,
+          2019.5
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 31,
+      "box_id": 31,
+      "box_dims": [
+        326.6,
+        219.1,
+        314.5
+      ],
+      "success": true,
+      "fill_rate_after": 0.436757,
+      "support_ratio": 0.8485,
+      "elapsed_ms": 0.172,
+      "placement": {
+        "step": 31,
+        "box_id": 31,
+        "dims": [
+          219.1,
+          326.6,
+          314.5
+        ],
+        "position": [
+          20.0,
+          20.0,
+          1906.9
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 32,
+      "box_id": 32,
+      "box_dims": [
+        498.8,
+        358.7,
+        491.3
+      ],
+      "success": true,
+      "fill_rate_after": 0.47067,
+      "support_ratio": 0.5911,
+      "elapsed_ms": 0.255,
+      "placement": {
+        "step": 32,
+        "box_id": 32,
+        "dims": [
+          498.8,
+          358.7,
+          491.3
+        ],
+        "position": [
+          530.0,
+          50.0,
+          2120.4
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 33,
+      "box_id": 33,
+      "box_dims": [
+        458.2,
+        203.4,
+        416.2
+      ],
+      "success": true,
+      "fill_rate_after": 0.485635,
+      "support_ratio": 0.5,
+      "elapsed_ms": 0.166,
+      "placement": {
+        "step": 33,
+        "box_id": 33,
+        "dims": [
+          458.2,
+          203.4,
+          416.2
+        ],
+        "position": [
+          20.0,
+          490.0,
+          2100.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 34,
+      "box_id": 34,
+      "box_dims": [
+        404.5,
+        361.1,
+        280.0
+      ],
+      "success": false,
+      "fill_rate_after": 0.0,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.0,
+      "rejection_reason": "Strategy found no valid placement"
+    },
+    {
+      "step": 35,
+      "box_id": 35,
+      "box_dims": [
+        392.3,
+        233.5,
+        330.4
+      ],
+      "success": true,
+      "fill_rate_after": 0.497311,
+      "support_ratio": 0.7949,
+      "elapsed_ms": 0.325,
+      "placement": {
+        "step": 35,
+        "box_id": 35,
+        "dims": [
+          392.3,
+          233.5,
+          330.4
+        ],
+        "position": [
+          530.0,
+          430.0,
+          2353.1
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 36,
+      "box_id": 36,
+      "box_dims": [
+        336.1,
+        486.1,
+        462.8
+      ],
+      "success": false,
+      "fill_rate_after": 0.0,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.0,
+      "rejection_reason": "Strategy found no valid placement"
+    },
+    {
+      "step": 37,
+      "box_id": 37,
+      "box_dims": [
+        279.0,
+        350.2,
+        253.6
+      ],
+      "success": false,
+      "fill_rate_after": 0.0,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.0,
+      "rejection_reason": "Strategy found no valid placement"
+    },
+    {
+      "step": 38,
+      "box_id": 38,
+      "box_dims": [
+        473.8,
+        461.2,
+        289.5
+      ],
+      "success": false,
+      "fill_rate_after": 0.0,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.0,
+      "rejection_reason": "Strategy found no valid placement"
+    },
+    {
+      "step": 39,
+      "box_id": 39,
+      "box_dims": [
+        391.7,
+        382.7,
+        245.9
+      ],
+      "success": false,
+      "fill_rate_after": 0.0,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.0,
+      "rejection_reason": "Strategy found no valid placement"
+    }
+  ],
+  "completed": true
+}

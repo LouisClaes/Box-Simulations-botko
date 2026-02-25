@@ -1,0 +1,92 @@
+{
+  "strategy": "baseline",
+  "timestamp": "2026-02-18T22:42:42.177329",
+  "dataset": {
+    "n_boxes": 20,
+    "seed": 777
+  },
+  "bin_config": {
+    "length": 1200.0,
+    "width": 800.0,
+    "height": 2700.0,
+    "resolution": 10.0
+  },
+  "aggregate": {
+    "n_runs": 5,
+    "mean_fill_rate": 0.063928,
+    "std_fill_rate": 0.0,
+    "min_fill_rate": 0.063928,
+    "max_fill_rate": 0.063928,
+    "avg_sec_per_box": 0.364163,
+    "avg_computation_time_ms": 7283.25,
+    "avg_boxes_placed": 20.0,
+    "total_elapsed_s": 36.42
+  },
+  "runs": [
+    {
+      "run_index": 0,
+      "shuffle_seed": 7770000,
+      "fill_rate": 0.063928,
+      "boxes_placed": 20,
+      "boxes_rejected": 0,
+      "boxes_total": 20,
+      "max_height": 298.6,
+      "computation_time_ms": 7880.52,
+      "sec_per_box": 0.394026,
+      "stability_rate": 1.0,
+      "completed": true
+    },
+    {
+      "run_index": 1,
+      "shuffle_seed": 7770001,
+      "fill_rate": 0.063928,
+      "boxes_placed": 20,
+      "boxes_rejected": 0,
+      "boxes_total": 20,
+      "max_height": 298.6,
+      "computation_time_ms": 7663.82,
+      "sec_per_box": 0.383191,
+      "stability_rate": 1.0,
+      "completed": true
+    },
+    {
+      "run_index": 2,
+      "shuffle_seed": 7770002,
+      "fill_rate": 0.063928,
+      "boxes_placed": 20,
+      "boxes_rejected": 0,
+      "boxes_total": 20,
+      "max_height": 298.6,
+      "computation_time_ms": 7568.84,
+      "sec_per_box": 0.378442,
+      "stability_rate": 1.0,
+      "completed": true
+    },
+    {
+      "run_index": 3,
+      "shuffle_seed": 7770003,
+      "fill_rate": 0.063928,
+      "boxes_placed": 20,
+      "boxes_rejected": 0,
+      "boxes_total": 20,
+      "max_height": 298.6,
+      "computation_time_ms": 6763.33,
+      "sec_per_box": 0.338166,
+      "stability_rate": 1.0,
+      "completed": true
+    },
+    {
+      "run_index": 4,
+      "shuffle_seed": 7770004,
+      "fill_rate": 0.063928,
+      "boxes_placed": 20,
+      "boxes_rejected": 0,
+      "boxes_total": 20,
+      "max_height": 298.6,
+      "computation_time_ms": 6539.76,
+      "sec_per_box": 0.326988,
+      "stability_rate": 1.0,
+      "completed": true
+    }
+  ]
+}

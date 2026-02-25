@@ -368,6 +368,11 @@ class LayerBuildingStrategy(BaseStrategy):
                         y += step
                         continue
 
+                    # Margin check (box-to-box gap enforcement)
+                    if not bin_state.is_margin_clear(x, y, ol, ow, z, oh):
+                        y += step
+                        continue
+
                     # ── Scoring ───────────────────────────────────────
                     score = self._score_candidate(
                         x, y, z, ol, ow, oh,

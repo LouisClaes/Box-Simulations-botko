@@ -234,6 +234,10 @@ class EMSStrategy(BaseStrategy):
                     if support_ratio < cfg.min_support_ratio:
                         continue
 
+                # Margin check (box-to-box gap enforcement)
+                if not bin_state.is_margin_clear(px, py, ol, ow, z, oh):
+                    continue
+
                 # Score this candidate
                 score = self._compute_score(px, py, z, ol, ow, oh, ems, bin_cfg)
 
@@ -528,6 +532,11 @@ class EMSStrategy(BaseStrategy):
                         if sr < cfg.min_support_ratio:
                             y += step
                             continue
+
+                    # Margin check (box-to-box gap enforcement)
+                    if not bin_state.is_margin_clear(x, y, ol, ow, z, oh):
+                        y += step
+                        continue
 
                     candidate = (z, x, y, oidx)
                     if best is None or candidate < best:

@@ -1,0 +1,410 @@
+Metadata: {
+  "timestamp": "20260223_133414",
+  "smoke_test": false,
+  "n_datasets": 3,
+  "n_shuffles": 2,
+  "n_boxes": 400,
+  "botko_config": {
+    "bin_config": {
+      "length": 1200.0,
+      "width": 800.0,
+      "height": 2700.0,
+      "resolution": 10.0
+    },
+    "num_bins": 2,
+    "buffer_size": 8,
+    "pick_window": 4,
+    "close_policy": "close fullest after 4 global rejects (min fill: 50%)",
+    "max_consecutive_rejects": 10,
+    "enable_stability": false,
+    "min_support_ratio": 0.8,
+    "allow_all_orientations": false
+  },
+  "top_5": [
+    "walle_scoring",
+    "surface_contact",
+    "best_fit_decreasing",
+    "hybrid_adaptive",
+    "extreme_points"
+  ],
+  "phase1_elapsed_s": 25896.219936249003
+}
+
+P1 entries: 138
+P2 entries: 108
+
+All strategies: ['baseline', 'best_fit_decreasing', 'blueprint_packing', 'column_fill', 'ems', 'extreme_points', 'gopt_heuristic', 'gravity_balanced', 'heuristic_160', 'hybrid_adaptive', 'layer_building', 'lbcp_stability', 'lookahead', 'online_bpp_heuristic', 'pct_expansion', 'pct_macs_heuristic', 'skyline', 'stacking_tree_stability', 'surface_contact', 'tsang_multibin', 'two_bounded_best_fit', 'wall_building', 'walle_scoring']
+All box_selectors: ['biggest_footprint_first', 'biggest_volume_first', 'default', 'native']
+All bin_selectors: ['emptiest_first', 'flattest_first', 'focus_fill', 'native']
+
+=== PHASE 1 COMBOS ===
+  baseline                  | default            | emptiest_first     | n=6
+  best_fit_decreasing       | default            | emptiest_first     | n=6
+  blueprint_packing         | default            | emptiest_first     | n=6
+  column_fill               | default            | emptiest_first     | n=6
+  ems                       | default            | emptiest_first     | n=6
+  extreme_points            | default            | emptiest_first     | n=6
+  gopt_heuristic            | default            | emptiest_first     | n=6
+  gravity_balanced          | default            | emptiest_first     | n=6
+  heuristic_160             | default            | emptiest_first     | n=6
+  hybrid_adaptive           | default            | emptiest_first     | n=6
+  layer_building            | default            | emptiest_first     | n=6
+  lbcp_stability            | default            | emptiest_first     | n=6
+  lookahead                 | default            | emptiest_first     | n=6
+  online_bpp_heuristic      | default            | emptiest_first     | n=6
+  pct_expansion             | default            | emptiest_first     | n=6
+  pct_macs_heuristic        | default            | emptiest_first     | n=6
+  skyline                   | default            | emptiest_first     | n=6
+  stacking_tree_stability   | default            | emptiest_first     | n=6
+  surface_contact           | default            | emptiest_first     | n=6
+  tsang_multibin            | native             | native             | n=6
+  two_bounded_best_fit      | native             | native             | n=6
+  wall_building             | default            | emptiest_first     | n=6
+  walle_scoring             | default            | emptiest_first     | n=6
+
+=== PHASE 2 COMBOS ===
+  best_fit_decreasing       | default            | emptiest_first     | n=1
+  surface_contact           | biggest_footprint_first | emptiest_first     | n=6
+  surface_contact           | biggest_footprint_first | flattest_first     | n=5
+  surface_contact           | biggest_footprint_first | focus_fill         | n=6
+  surface_contact           | biggest_volume_first | emptiest_first     | n=6
+  surface_contact           | biggest_volume_first | flattest_first     | n=6
+  surface_contact           | biggest_volume_first | focus_fill         | n=6
+  surface_contact           | default            | emptiest_first     | n=6
+  surface_contact           | default            | flattest_first     | n=6
+  surface_contact           | default            | focus_fill         | n=6
+  walle_scoring             | biggest_footprint_first | emptiest_first     | n=6
+  walle_scoring             | biggest_footprint_first | flattest_first     | n=6
+  walle_scoring             | biggest_footprint_first | focus_fill         | n=6
+  walle_scoring             | biggest_volume_first | emptiest_first     | n=6
+  walle_scoring             | biggest_volume_first | flattest_first     | n=6
+  walle_scoring             | biggest_volume_first | focus_fill         | n=6
+  walle_scoring             | default            | emptiest_first     | n=6
+  walle_scoring             | default            | flattest_first     | n=6
+  walle_scoring             | default            | focus_fill         | n=6
+
+=== PHASE 1 AGGREGATED (default selector, emptiest_first) ===
+
+baseline (n=6):
+  avg_closed_fill:      mean=0.7148  std=0.0157
+  avg_closed_eff_fill:  mean=0.7156  std=0.0157
+  placement_rate:       mean=0.8888  std=0.0394
+  ms_per_box:           mean=1130.54  std=59.55
+  pallets_closed:       mean=3.0
+  total_placed:         mean=355.5
+  total_rejected:       mean=44.5
+
+best_fit_decreasing (n=6):
+  avg_closed_fill:      mean=0.7492  std=0.0180
+  avg_closed_eff_fill:  mean=0.7519  std=0.0201
+  placement_rate:       mean=0.8967  std=0.0605
+  ms_per_box:           mean=3140.93  std=212.07
+  pallets_closed:       mean=2.8
+  total_placed:         mean=358.7
+  total_rejected:       mean=41.3
+
+blueprint_packing (n=6):
+  avg_closed_fill:      mean=0.5787  std=0.0290
+  avg_closed_eff_fill:  mean=0.5787  std=0.0290
+  placement_rate:       mean=0.7633  std=0.1595
+  ms_per_box:           mean=12.57  std=1.50
+  pallets_closed:       mean=2.8
+  total_placed:         mean=305.3
+  total_rejected:       mean=64.7
+
+column_fill (n=6):
+  avg_closed_fill:      mean=0.7148  std=0.0157
+  avg_closed_eff_fill:  mean=0.7156  std=0.0157
+  placement_rate:       mean=0.8888  std=0.0394
+  ms_per_box:           mean=1192.37  std=145.42
+  pallets_closed:       mean=3.0
+  total_placed:         mean=355.5
+  total_rejected:       mean=44.5
+
+ems (n=6):
+  avg_closed_fill:      mean=0.7249  std=0.0221
+  avg_closed_eff_fill:  mean=0.7272  std=0.0180
+  placement_rate:       mean=0.8754  std=0.0418
+  ms_per_box:           mean=8189.83  std=716.64
+  pallets_closed:       mean=2.8
+  total_placed:         mean=350.2
+  total_rejected:       mean=49.8
+
+extreme_points (n=6):
+  avg_closed_fill:      mean=0.7292  std=0.0301
+  avg_closed_eff_fill:  mean=0.7299  std=0.0295
+  placement_rate:       mean=0.9204  std=0.0436
+  ms_per_box:           mean=18.09  std=2.52
+  pallets_closed:       mean=3.2
+  total_placed:         mean=368.2
+  total_rejected:       mean=31.8
+
+gopt_heuristic (n=6):
+  avg_closed_fill:      mean=0.5990  std=0.0081
+  avg_closed_eff_fill:  mean=0.6008  std=0.0081
+  placement_rate:       mean=0.8371  std=0.0195
+  ms_per_box:           mean=79.83  std=5.93
+  pallets_closed:       mean=3.2
+  total_placed:         mean=334.8
+  total_rejected:       mean=65.2
+
+gravity_balanced (n=6):
+  avg_closed_fill:      mean=0.6204  std=0.0721
+  avg_closed_eff_fill:  mean=0.6298  std=0.0794
+  placement_rate:       mean=0.6646  std=0.2575
+  ms_per_box:           mean=1479.89  std=140.96
+  pallets_closed:       mean=2.0
+  total_placed:         mean=265.8
+  total_rejected:       mean=58.5
+
+heuristic_160 (n=6):
+  avg_closed_fill:      mean=0.5877  std=0.0266
+  avg_closed_eff_fill:  mean=0.5877  std=0.0266
+  placement_rate:       mean=0.8854  std=0.0320
+  ms_per_box:           mean=291.75  std=31.94
+  pallets_closed:       mean=4.2
+  total_placed:         mean=354.2
+  total_rejected:       mean=45.8
+
+hybrid_adaptive (n=6):
+  avg_closed_fill:      mean=0.7325  std=0.0193
+  avg_closed_eff_fill:  mean=0.7333  std=0.0186
+  placement_rate:       mean=0.8925  std=0.0293
+  ms_per_box:           mean=1649.39  std=105.05
+  pallets_closed:       mean=2.8
+  total_placed:         mean=357.0
+  total_rejected:       mean=43.0
+
+layer_building (n=6):
+  avg_closed_fill:      mean=0.6727  std=0.0192
+  avg_closed_eff_fill:  mean=0.6733  std=0.0187
+  placement_rate:       mean=0.8842  std=0.0385
+  ms_per_box:           mean=1856.20  std=59.06
+  pallets_closed:       mean=3.3
+  total_placed:         mean=353.7
+  total_rejected:       mean=46.3
+
+lbcp_stability (n=6):
+  avg_closed_fill:      mean=0.5779  std=0.0151
+  avg_closed_eff_fill:  mean=0.5779  std=0.0151
+  placement_rate:       mean=0.8458  std=0.0506
+  ms_per_box:           mean=8364.13  std=586.44
+  pallets_closed:       mean=3.3
+  total_placed:         mean=338.3
+  total_rejected:       mean=58.0
+
+lookahead (n=6):
+  avg_closed_fill:      mean=0.6722  std=0.0181
+  avg_closed_eff_fill:  mean=0.6742  std=0.0187
+  placement_rate:       mean=0.8929  std=0.0244
+  ms_per_box:           mean=1331.17  std=72.59
+  pallets_closed:       mean=3.3
+  total_placed:         mean=357.2
+  total_rejected:       mean=42.8
+
+online_bpp_heuristic (n=6):
+  avg_closed_fill:      mean=0.5898  std=0.0184
+  avg_closed_eff_fill:  mean=0.5910  std=0.0184
+  placement_rate:       mean=0.8400  std=0.0167
+  ms_per_box:           mean=1020.31  std=46.13
+  pallets_closed:       mean=3.2
+  total_placed:         mean=336.0
+  total_rejected:       mean=64.0
+
+pct_expansion (n=6):
+  avg_closed_fill:      mean=0.5376  std=0.0230
+  avg_closed_eff_fill:  mean=0.5376  std=0.0230
+  placement_rate:       mean=0.4492  std=0.2676
+  ms_per_box:           mean=136.92  std=60.09
+  pallets_closed:       mean=1.2
+  total_placed:         mean=179.7
+  total_rejected:       mean=46.0
+
+pct_macs_heuristic (n=6):
+  avg_closed_fill:      mean=0.6302  std=0.0344
+  avg_closed_eff_fill:  mean=0.6310  std=0.0354
+  placement_rate:       mean=0.7846  std=0.1426
+  ms_per_box:           mean=1933.81  std=151.99
+  pallets_closed:       mean=2.8
+  total_placed:         mean=313.8
+  total_rejected:       mean=63.3
+
+skyline (n=6):
+  avg_closed_fill:      mean=0.5579  std=0.0139
+  avg_closed_eff_fill:  mean=0.5579  std=0.0139
+  placement_rate:       mean=0.6538  std=0.2476
+  ms_per_box:           mean=578.46  std=91.58
+  pallets_closed:       mean=2.7
+  total_placed:         mean=261.5
+  total_rejected:       mean=49.7
+
+stacking_tree_stability (n=6):
+  avg_closed_fill:      mean=0.6026  std=0.0277
+  avg_closed_eff_fill:  mean=0.6059  std=0.0266
+  placement_rate:       mean=0.8442  std=0.0271
+  ms_per_box:           mean=1439.18  std=204.57
+  pallets_closed:       mean=3.3
+  total_placed:         mean=337.7
+  total_rejected:       mean=62.3
+
+surface_contact (n=6):
+  avg_closed_fill:      mean=0.7582  std=0.0164
+  avg_closed_eff_fill:  mean=0.7606  std=0.0165
+  placement_rate:       mean=0.9062  std=0.0493
+  ms_per_box:           mean=5228.32  std=426.06
+  pallets_closed:       mean=2.8
+  total_placed:         mean=362.5
+  total_rejected:       mean=37.5
+
+wall_building (n=6):
+  avg_closed_fill:      mean=0.6080  std=0.0348
+  avg_closed_eff_fill:  mean=0.6107  std=0.0354
+  placement_rate:       mean=0.8529  std=0.0460
+  ms_per_box:           mean=1709.33  std=199.84
+  pallets_closed:       mean=3.7
+  total_placed:         mean=341.2
+  total_rejected:       mean=58.8
+
+walle_scoring (n=6):
+  avg_closed_fill:      mean=0.7750  std=0.0142
+  avg_closed_eff_fill:  mean=0.7758  std=0.0134
+  placement_rate:       mean=0.8983  std=0.0513
+  ms_per_box:           mean=3480.35  std=204.13
+  pallets_closed:       mean=2.7
+  total_placed:         mean=359.3
+  total_rejected:       mean=40.7
+
+=== PHASE 2 AGGREGATED (per strategy + selectors) ===
+
+best_fit_decreasing | box=default | bin=emptiest_first (n=1):
+  avg_closed_fill:      mean=0.7486
+  avg_closed_eff_fill:  mean=0.7486
+  placement_rate:       mean=0.9575
+  ms_per_box:           mean=2965.21
+  pallets_closed:       mean=3.0
+
+surface_contact | box=biggest_footprint_first | bin=emptiest_first (n=6):
+  avg_closed_fill:      mean=0.7353
+  avg_closed_eff_fill:  mean=0.7359
+  placement_rate:       mean=0.9046
+  ms_per_box:           mean=8063.65
+  pallets_closed:       mean=3.2
+
+surface_contact | box=biggest_footprint_first | bin=flattest_first (n=5):
+  avg_closed_fill:      mean=0.7433
+  avg_closed_eff_fill:  mean=0.7471
+  placement_rate:       mean=0.9155
+  ms_per_box:           mean=7950.23
+  pallets_closed:       mean=3.2
+
+surface_contact | box=biggest_footprint_first | bin=focus_fill (n=6):
+  avg_closed_fill:      mean=0.7532
+  avg_closed_eff_fill:  mean=0.7532
+  placement_rate:       mean=0.9050
+  ms_per_box:           mean=5219.64
+  pallets_closed:       mean=3.2
+
+surface_contact | box=biggest_volume_first | bin=emptiest_first (n=6):
+  avg_closed_fill:      mean=0.7353
+  avg_closed_eff_fill:  mean=0.7359
+  placement_rate:       mean=0.9046
+  ms_per_box:           mean=8047.74
+  pallets_closed:       mean=3.2
+
+surface_contact | box=biggest_volume_first | bin=flattest_first (n=6):
+  avg_closed_fill:      mean=0.7454
+  avg_closed_eff_fill:  mean=0.7486
+  placement_rate:       mean=0.9062
+  ms_per_box:           mean=7991.39
+  pallets_closed:       mean=3.0
+
+surface_contact | box=biggest_volume_first | bin=focus_fill (n=6):
+  avg_closed_fill:      mean=0.7532
+  avg_closed_eff_fill:  mean=0.7532
+  placement_rate:       mean=0.9050
+  ms_per_box:           mean=5149.32
+  pallets_closed:       mean=3.2
+
+surface_contact | box=default | bin=emptiest_first (n=6):
+  avg_closed_fill:      mean=0.7582
+  avg_closed_eff_fill:  mean=0.7606
+  placement_rate:       mean=0.9062
+  ms_per_box:           mean=5076.74
+  pallets_closed:       mean=2.8
+
+surface_contact | box=default | bin=flattest_first (n=6):
+  avg_closed_fill:      mean=0.7678
+  avg_closed_eff_fill:  mean=0.7685
+  placement_rate:       mean=0.8875
+  ms_per_box:           mean=4954.43
+  pallets_closed:       mean=3.0
+
+surface_contact | box=default | bin=focus_fill (n=6):
+  avg_closed_fill:      mean=0.7724
+  avg_closed_eff_fill:  mean=0.7740
+  placement_rate:       mean=0.9179
+  ms_per_box:           mean=4285.54
+  pallets_closed:       mean=3.2
+
+walle_scoring | box=biggest_footprint_first | bin=emptiest_first (n=6):
+  avg_closed_fill:      mean=0.7626
+  avg_closed_eff_fill:  mean=0.7634
+  placement_rate:       mean=0.9367
+  ms_per_box:           mean=5674.59
+  pallets_closed:       mean=3.0
+
+walle_scoring | box=biggest_footprint_first | bin=flattest_first (n=6):
+  avg_closed_fill:      mean=0.7697
+  avg_closed_eff_fill:  mean=0.7706
+  placement_rate:       mean=0.9196
+  ms_per_box:           mean=5427.09
+  pallets_closed:       mean=3.0
+
+walle_scoring | box=biggest_footprint_first | bin=focus_fill (n=6):
+  avg_closed_fill:      mean=0.7853
+  avg_closed_eff_fill:  mean=0.7853
+  placement_rate:       mean=0.9029
+  ms_per_box:           mean=3662.17
+  pallets_closed:       mean=2.8
+
+walle_scoring | box=biggest_volume_first | bin=emptiest_first (n=6):
+  avg_closed_fill:      mean=0.7626
+  avg_closed_eff_fill:  mean=0.7634
+  placement_rate:       mean=0.9367
+  ms_per_box:           mean=5725.26
+  pallets_closed:       mean=3.0
+
+walle_scoring | box=biggest_volume_first | bin=flattest_first (n=6):
+  avg_closed_fill:      mean=0.7697
+  avg_closed_eff_fill:  mean=0.7706
+  placement_rate:       mean=0.9196
+  ms_per_box:           mean=5405.63
+  pallets_closed:       mean=3.0
+
+walle_scoring | box=biggest_volume_first | bin=focus_fill (n=6):
+  avg_closed_fill:      mean=0.7853
+  avg_closed_eff_fill:  mean=0.7853
+  placement_rate:       mean=0.9029
+  ms_per_box:           mean=3484.05
+  pallets_closed:       mean=2.8
+
+walle_scoring | box=default | bin=emptiest_first (n=6):
+  avg_closed_fill:      mean=0.7750
+  avg_closed_eff_fill:  mean=0.7758
+  placement_rate:       mean=0.8983
+  ms_per_box:           mean=3467.11
+  pallets_closed:       mean=2.7
+
+walle_scoring | box=default | bin=flattest_first (n=6):
+  avg_closed_fill:      mean=0.7678
+  avg_closed_eff_fill:  mean=0.7678
+  placement_rate:       mean=0.9033
+  ms_per_box:           mean=3465.75
+  pallets_closed:       mean=2.7
+
+walle_scoring | box=default | bin=focus_fill (n=6):
+  avg_closed_fill:      mean=0.7713
+  avg_closed_eff_fill:  mean=0.7729
+  placement_rate:       mean=0.9254
+  ms_per_box:           mean=2672.43
+  pallets_closed:       mean=3.0

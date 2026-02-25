@@ -1,0 +1,896 @@
+{
+  "experiment": {
+    "strategy_name": "surface_contact",
+    "dataset_path": "",
+    "timestamp": "2026-02-19T12:42:23.883211",
+    "config": {
+      "bin": {
+        "length": 60.0,
+        "width": 40.0,
+        "height": 60.0,
+        "resolution": 1.0
+      },
+      "strategy_name": "surface_contact",
+      "dataset_path": "",
+      "enable_stability": false,
+      "min_support_ratio": 0.8,
+      "allow_all_orientations": false,
+      "render_3d": false,
+      "verbose": false
+    }
+  },
+  "metrics": {
+    "fill_rate": 0.21593236111111114,
+    "boxes_total": 20,
+    "boxes_placed": 20,
+    "boxes_rejected": 0,
+    "max_height": 25.799999999999997,
+    "computation_time_ms": 13209.0,
+    "stability_rate": 1.0
+  },
+  "placements": [
+    {
+      "step": 0,
+      "box_id": 0,
+      "dims": [
+        14.6,
+        5.4,
+        9.1
+      ],
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 1,
+      "box_id": 1,
+      "dims": [
+        8.3,
+        16.0,
+        15.2
+      ],
+      "position": [
+        0.0,
+        24.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 2,
+      "box_id": 2,
+      "dims": [
+        6.3,
+        18.4,
+        11.3
+      ],
+      "position": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 3,
+      "box_id": 3,
+      "dims": [
+        8.3,
+        5.4,
+        12.6
+      ],
+      "position": [
+        14.6,
+        0.0,
+        0.0
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 4,
+      "box_id": 4,
+      "dims": [
+        5.4,
+        8.0,
+        14.7
+      ],
+      "position": [
+        8.0,
+        32.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 5,
+      "box_id": 5,
+      "dims": [
+        13.2,
+        8.3,
+        13.8
+      ],
+      "position": [
+        22.9,
+        0.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 6,
+      "box_id": 6,
+      "dims": [
+        17.1,
+        5.1,
+        17.1
+      ],
+      "position": [
+        36.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 7,
+      "box_id": 7,
+      "dims": [
+        10.1,
+        15.5,
+        7.3
+      ],
+      "position": [
+        6.0,
+        5.0,
+        0.0
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 8,
+      "box_id": 8,
+      "dims": [
+        19.4,
+        10.0,
+        6.4
+      ],
+      "position": [
+        13.0,
+        30.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 9,
+      "box_id": 9,
+      "dims": [
+        6.5,
+        17.7,
+        14.1
+      ],
+      "position": [
+        53.0,
+        0.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 10,
+      "box_id": 10,
+      "dims": [
+        17.1,
+        15.9,
+        13.0
+      ],
+      "position": [
+        36.0,
+        5.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 11,
+      "box_id": 11,
+      "dims": [
+        19.6,
+        10.7,
+        13.3
+      ],
+      "position": [
+        16.0,
+        8.0,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 12,
+      "box_id": 12,
+      "dims": [
+        17.4,
+        14.3,
+        17.9
+      ],
+      "position": [
+        36.0,
+        20.9,
+        0.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 13,
+      "box_id": 13,
+      "dims": [
+        13.7,
+        15.6,
+        5.7
+      ],
+      "position": [
+        39.0,
+        5.0,
+        13.0
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 14,
+      "box_id": 14,
+      "dims": [
+        9.3,
+        8.4,
+        6.2
+      ],
+      "position": [
+        27.0,
+        19.0,
+        0.0
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 15,
+      "box_id": 15,
+      "dims": [
+        6.5,
+        8.5,
+        9.2
+      ],
+      "position": [
+        53.0,
+        17.7,
+        0.0
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 16,
+      "box_id": 16,
+      "dims": [
+        10.5,
+        14.5,
+        10.6
+      ],
+      "position": [
+        0.0,
+        25.0,
+        15.2
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 17,
+      "box_id": 17,
+      "dims": [
+        8.1,
+        9.0,
+        19.0
+      ],
+      "position": [
+        13.0,
+        31.0,
+        6.4
+      ],
+      "orientation": 0
+    },
+    {
+      "step": 18,
+      "box_id": 18,
+      "dims": [
+        14.1,
+        14.7,
+        7.6
+      ],
+      "position": [
+        22.0,
+        0.0,
+        13.8
+      ],
+      "orientation": 1
+    },
+    {
+      "step": 19,
+      "box_id": 19,
+      "dims": [
+        15.9,
+        7.5,
+        10.7
+      ],
+      "position": [
+        10.0,
+        22.0,
+        0.0
+      ],
+      "orientation": 0
+    }
+  ],
+  "step_log": [
+    {
+      "step": 0,
+      "box_id": 0,
+      "box_dims": [
+        14.6,
+        5.4,
+        9.1
+      ],
+      "success": true,
+      "fill_rate_after": 0.004982,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.134,
+      "placement": {
+        "step": 0,
+        "box_id": 0,
+        "dims": [
+          14.6,
+          5.4,
+          9.1
+        ],
+        "position": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 1,
+      "box_id": 1,
+      "box_dims": [
+        8.3,
+        16.0,
+        15.2
+      ],
+      "success": true,
+      "fill_rate_after": 0.019,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.18,
+      "placement": {
+        "step": 1,
+        "box_id": 1,
+        "dims": [
+          8.3,
+          16.0,
+          15.2
+        ],
+        "position": [
+          0.0,
+          24.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 2,
+      "box_id": 2,
+      "box_dims": [
+        18.4,
+        6.3,
+        11.3
+      ],
+      "success": true,
+      "fill_rate_after": 0.028097,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.114,
+      "placement": {
+        "step": 2,
+        "box_id": 2,
+        "dims": [
+          6.3,
+          18.4,
+          11.3
+        ],
+        "position": [
+          0.0,
+          6.0,
+          0.0
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 3,
+      "box_id": 3,
+      "box_dims": [
+        5.4,
+        8.3,
+        12.6
+      ],
+      "success": true,
+      "fill_rate_after": 0.032018,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.087,
+      "placement": {
+        "step": 3,
+        "box_id": 3,
+        "dims": [
+          8.3,
+          5.4,
+          12.6
+        ],
+        "position": [
+          14.6,
+          0.0,
+          0.0
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 4,
+      "box_id": 4,
+      "box_dims": [
+        5.4,
+        8.0,
+        14.7
+      ],
+      "success": true,
+      "fill_rate_after": 0.036428,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.086,
+      "placement": {
+        "step": 4,
+        "box_id": 4,
+        "dims": [
+          5.4,
+          8.0,
+          14.7
+        ],
+        "position": [
+          8.0,
+          32.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 5,
+      "box_id": 5,
+      "box_dims": [
+        13.2,
+        8.3,
+        13.8
+      ],
+      "success": true,
+      "fill_rate_after": 0.046928,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.086,
+      "placement": {
+        "step": 5,
+        "box_id": 5,
+        "dims": [
+          13.2,
+          8.3,
+          13.8
+        ],
+        "position": [
+          22.9,
+          0.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 6,
+      "box_id": 6,
+      "box_dims": [
+        17.1,
+        5.1,
+        17.1
+      ],
+      "success": true,
+      "fill_rate_after": 0.057284,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.125,
+      "placement": {
+        "step": 6,
+        "box_id": 6,
+        "dims": [
+          17.1,
+          5.1,
+          17.1
+        ],
+        "position": [
+          36.0,
+          0.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 7,
+      "box_id": 7,
+      "box_dims": [
+        15.5,
+        10.1,
+        7.3
+      ],
+      "success": true,
+      "fill_rate_after": 0.06522,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.153,
+      "placement": {
+        "step": 7,
+        "box_id": 7,
+        "dims": [
+          10.1,
+          15.5,
+          7.3
+        ],
+        "position": [
+          6.0,
+          5.0,
+          0.0
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 8,
+      "box_id": 8,
+      "box_dims": [
+        19.4,
+        10.0,
+        6.4
+      ],
+      "success": true,
+      "fill_rate_after": 0.073842,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.164,
+      "placement": {
+        "step": 8,
+        "box_id": 8,
+        "dims": [
+          19.4,
+          10.0,
+          6.4
+        ],
+        "position": [
+          13.0,
+          30.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 9,
+      "box_id": 9,
+      "box_dims": [
+        6.5,
+        17.7,
+        14.1
+      ],
+      "success": true,
+      "fill_rate_after": 0.085108,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.091,
+      "placement": {
+        "step": 9,
+        "box_id": 9,
+        "dims": [
+          6.5,
+          17.7,
+          14.1
+        ],
+        "position": [
+          53.0,
+          0.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 10,
+      "box_id": 10,
+      "box_dims": [
+        17.1,
+        15.9,
+        13.0
+      ],
+      "success": true,
+      "fill_rate_after": 0.109653,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.182,
+      "placement": {
+        "step": 10,
+        "box_id": 10,
+        "dims": [
+          17.1,
+          15.9,
+          13.0
+        ],
+        "position": [
+          36.0,
+          5.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 11,
+      "box_id": 11,
+      "box_dims": [
+        19.6,
+        10.7,
+        13.3
+      ],
+      "success": true,
+      "fill_rate_after": 0.129023,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.21,
+      "placement": {
+        "step": 11,
+        "box_id": 11,
+        "dims": [
+          19.6,
+          10.7,
+          13.3
+        ],
+        "position": [
+          16.0,
+          8.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 12,
+      "box_id": 12,
+      "box_dims": [
+        17.4,
+        14.3,
+        17.9
+      ],
+      "success": true,
+      "fill_rate_after": 0.159953,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.1,
+      "placement": {
+        "step": 12,
+        "box_id": 12,
+        "dims": [
+          17.4,
+          14.3,
+          17.9
+        ],
+        "position": [
+          36.0,
+          20.9,
+          0.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 13,
+      "box_id": 13,
+      "box_dims": [
+        13.7,
+        15.6,
+        5.7
+      ],
+      "success": true,
+      "fill_rate_after": 0.168413,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.23,
+      "placement": {
+        "step": 13,
+        "box_id": 13,
+        "dims": [
+          13.7,
+          15.6,
+          5.7
+        ],
+        "position": [
+          39.0,
+          5.0,
+          13.0
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 14,
+      "box_id": 14,
+      "box_dims": [
+        8.4,
+        9.3,
+        6.2
+      ],
+      "success": true,
+      "fill_rate_after": 0.171776,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.104,
+      "placement": {
+        "step": 14,
+        "box_id": 14,
+        "dims": [
+          9.3,
+          8.4,
+          6.2
+        ],
+        "position": [
+          27.0,
+          19.0,
+          0.0
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 15,
+      "box_id": 15,
+      "box_dims": [
+        8.5,
+        6.5,
+        9.2
+      ],
+      "success": true,
+      "fill_rate_after": 0.175306,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.163,
+      "placement": {
+        "step": 15,
+        "box_id": 15,
+        "dims": [
+          6.5,
+          8.5,
+          9.2
+        ],
+        "position": [
+          53.0,
+          17.7,
+          0.0
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 16,
+      "box_id": 16,
+      "box_dims": [
+        14.5,
+        10.5,
+        10.6
+      ],
+      "success": true,
+      "fill_rate_after": 0.186513,
+      "support_ratio": 0.9,
+      "elapsed_ms": 0.14,
+      "placement": {
+        "step": 16,
+        "box_id": 16,
+        "dims": [
+          10.5,
+          14.5,
+          10.6
+        ],
+        "position": [
+          0.0,
+          25.0,
+          15.2
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 17,
+      "box_id": 17,
+      "box_dims": [
+        8.1,
+        9.0,
+        19.0
+      ],
+      "success": true,
+      "fill_rate_after": 0.196132,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.237,
+      "placement": {
+        "step": 17,
+        "box_id": 17,
+        "dims": [
+          8.1,
+          9.0,
+          19.0
+        ],
+        "position": [
+          13.0,
+          31.0,
+          6.4
+        ],
+        "orientation": 0
+      }
+    },
+    {
+      "step": 18,
+      "box_id": 18,
+      "box_dims": [
+        14.7,
+        14.1,
+        7.6
+      ],
+      "success": true,
+      "fill_rate_after": 0.207071,
+      "support_ratio": 0.9619,
+      "elapsed_ms": 0.204,
+      "placement": {
+        "step": 18,
+        "box_id": 18,
+        "dims": [
+          14.1,
+          14.7,
+          7.6
+        ],
+        "position": [
+          22.0,
+          0.0,
+          13.8
+        ],
+        "orientation": 1
+      }
+    },
+    {
+      "step": 19,
+      "box_id": 19,
+      "box_dims": [
+        15.9,
+        7.5,
+        10.7
+      ],
+      "success": true,
+      "fill_rate_after": 0.215932,
+      "support_ratio": 1.0,
+      "elapsed_ms": 0.114,
+      "placement": {
+        "step": 19,
+        "box_id": 19,
+        "dims": [
+          15.9,
+          7.5,
+          10.7
+        ],
+        "position": [
+          10.0,
+          22.0,
+          0.0
+        ],
+        "orientation": 0
+      }
+    }
+  ],
+  "completed": true
+}

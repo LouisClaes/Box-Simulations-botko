@@ -199,6 +199,10 @@ class GravityBalancedStrategy(BaseStrategy):
                     if support_ratio < cfg.min_support_ratio:
                         continue
 
+                # --- Margin check (box-to-box gap enforcement) ---
+                if not bin_state.is_margin_clear(cx, cy, ol, ow, z, oh):
+                    continue
+
                 # --- Compute hypothetical new CoG ---
                 box_vol = ol * ow * oh
                 new_vol = total_volume + box_vol

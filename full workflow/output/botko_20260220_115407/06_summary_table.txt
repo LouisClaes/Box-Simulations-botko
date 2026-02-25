@@ -1,0 +1,6 @@
+  # Strategy                               Type   Fill%    Eff%  Placed   H0mm   H1mm   ms/box
+----------------------------------------------------------------------------------------------
+  1 two_bounded_best_fit              multi_bin   5.89%   28.9%      20    550    250      740
+  2 baseline                         single_bin   5.89%   53.0%      20    250    300     1934
+  3 walle_scoring                    single_bin   5.89%   53.0%      20    250    300     9774
+  4 surface_contact                  single_bin   5.89%   53.0%      20    250    300    15411

@@ -221,6 +221,10 @@ class OnlineBPPHeuristicStrategy(BaseStrategy):
                         continue
                     contact_ratio = support_ratio
 
+                # Margin check (box-to-box gap enforcement)
+                if not bin_state.is_margin_clear(cx, cy, ol, ow, z, oh):
+                    continue
+
                 # Composite score: contact + support − height − tie-break
                 height_norm = z / bin_height if bin_height > 0.0 else 0.0
                 score = (

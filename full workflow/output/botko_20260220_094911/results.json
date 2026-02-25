@@ -1,0 +1,28 @@
+{
+  "metadata": {
+    "timestamp": "20260220_094911",
+    "smoke_test": true,
+    "n_datasets": 1,
+    "n_shuffles": 1,
+    "n_boxes": 20,
+    "top_5": []
+  },
+  "phase1_baseline": [
+    {
+      "strategy": "baseline",
+      "box_selector": "default",
+      "bin_selector": "emptiest_first",
+      "total_boxes": 20,
+      "total_placed": 20,
+      "total_rejected": 0,
+      "placement_rate": 1.0,
+      "aggregate_fill": 0.058929398148148154,
+      "pallet_0_fill": 0.05406828703703704,
+      "pallet_1_fill": 0.06379050925925926,
+      "consecutive_rejects_triggered": false,
+      "dataset_id": 0,
+      "shuffle_id": 0
+    }
+  ],
+  "phase2_sweep": []
+}

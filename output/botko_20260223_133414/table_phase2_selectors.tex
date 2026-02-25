@@ -1,0 +1,56 @@
+\documentclass[border=10pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{textcomp}
+\usepackage{lmodern}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{multirow}
+
+\definecolor{headerblue}{HTML}{1B365D}
+\definecolor{headertxt}{HTML}{FFFFFF}
+\definecolor{rowalt}{HTML}{F5F7FA}
+\definecolor{bestgreen}{HTML}{1A8C42}
+\definecolor{wallecolor}{HTML}{FFF8E1}
+\definecolor{surfacecolor}{HTML}{E8F5E9}
+
+\newcommand{\best}[1]{\textcolor{bestgreen}{\textbf{#1}}}
+
+\begin{document}
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.28}
+\footnotesize
+
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.8cm}  >{\centering\arraybackslash}p{1.8cm}  >{\centering\arraybackslash}p{1.6cm}  r  r  r  r  r}
+
+\toprule
+\rowcolor{headerblue}
+\textcolor{headertxt}{\textbf{Strategy}} & \textcolor{headertxt}{\textbf{Box Sel.}} & \textcolor{headertxt}{\textbf{Bin Sel.}} & \textcolor{headertxt}{\textbf{Fill [\%]}} & \textcolor{headertxt}{\textbf{Place [\%]}} & \textcolor{headertxt}{\textbf{ms/box}} & \textcolor{headertxt}{\textbf{$\overline{\mathit{P}}_c$}} & \textcolor{headertxt}{\textbf{Rej./P}} \\
+\midrule
+\rowcolor{wallecolor}WALL\textperiodcentered E Scoring & Foot.\,$\downarrow$ & Focus-Fill & \best{78.5} & 90.3 & 3.7k & 2.8 & 14.6 \\
+\rowcolor{wallecolor}WALL\textperiodcentered E Scoring & Vol.\,$\downarrow$ & Focus-Fill & \best{78.5} & 90.3 & 3.5k & 2.8 & 14.6 \\
+\rowcolor{wallecolor}WALL\textperiodcentered E Scoring & Default & Emptiest & 77.5 & 89.8 & 3.5k & 2.7 & 17.0 \\
+\rowcolor{wallecolor}WALL\textperiodcentered E Scoring & Default & Focus-Fill & 77.1 & 92.5 & \best{2.7k} & 3.0 & 9.9 \\
+\rowcolor{wallecolor}WALL\textperiodcentered E Scoring & Foot.\,$\downarrow$ & Flattest & 77.0 & 92.0 & 5.4k & 3.0 & 10.7 \\
+\rowcolor{wallecolor}WALL\textperiodcentered E Scoring & Vol.\,$\downarrow$ & Flattest & 77.0 & 92.0 & 5.4k & 3.0 & 10.7 \\
+\rowcolor{wallecolor}WALL\textperiodcentered E Scoring & Default & Flattest & 76.8 & 90.3 & 3.5k & 2.7 & 16.4 \\
+\rowcolor{wallecolor}WALL\textperiodcentered E Scoring & Foot.\,$\downarrow$ & Emptiest & 76.3 & 93.7 & 5.7k & 3.0 & 8.4 \\
+\rowcolor{wallecolor}WALL\textperiodcentered E Scoring & Vol.\,$\downarrow$ & Emptiest & 76.3 & 93.7 & 5.7k & 3.0 & 8.4 \\
+\midrule
+\rowcolor{surfacecolor}Surface Contact & Default & Focus-Fill & 77.2 & 91.8 & 4.3k & 3.2 & 10.6 \\
+\rowcolor{surfacecolor}Surface Contact & Default & Flattest & 76.8 & 88.8 & 5.0k & 3.0 & 15.0 \\
+\rowcolor{surfacecolor}Surface Contact & Default & Emptiest & 75.8 & 90.6 & 5.1k & 2.8 & 14.2 \\
+\rowcolor{surfacecolor}Surface Contact & Foot.\,$\downarrow$ & Focus-Fill & 75.3 & 90.5 & 5.2k & 3.2 & 12.1 \\
+\rowcolor{surfacecolor}Surface Contact & Vol.\,$\downarrow$ & Focus-Fill & 75.3 & 90.5 & 5.1k & 3.2 & 12.1 \\
+\rowcolor{surfacecolor}Surface Contact & Vol.\,$\downarrow$ & Flattest & 74.5 & 90.6 & 8.0k & 3.0 & 13.6 \\
+\rowcolor{surfacecolor}Surface Contact & Foot.\,$\downarrow$ & Flattest & 74.3 & 91.5 & 8.0k & 3.2 & 10.7 \\
+\rowcolor{surfacecolor}Surface Contact & Foot.\,$\downarrow$ & Emptiest & 73.5 & 90.5 & 8.1k & 3.2 & 12.2 \\
+\rowcolor{surfacecolor}Surface Contact & Vol.\,$\downarrow$ & Emptiest & 73.5 & 90.5 & 8.0k & 3.2 & 12.2 \\
+\midrule
+Best-Fit Decreasing & Default & Emptiest & 74.9 & \best{95.8} & 3.0k & 3.0 & \best{5.7} \\
+\bottomrule
+\end{tabular}
+\end{document}

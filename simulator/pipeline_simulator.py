@@ -164,6 +164,7 @@ class PipelineSimulator:
                 oriented_l=ol, oriented_w=ow, oriented_h=oh,
                 enable_stability=self._config.enable_stability,
                 min_support_ratio=self._config.min_support_ratio,
+                placed_boxes=self._bin_state.placed_boxes,
             )
         except PlacementError as e:
             self._log_rejection(step, box, t0, str(e))

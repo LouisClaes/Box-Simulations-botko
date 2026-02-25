@@ -112,12 +112,16 @@ def _draw_conveyor(plotter: pv.Plotter, buffer_boxes: List[Box], all_remaining: 
                    buffer_capacity: int = 8):
     """Draw conveyor belt with boxes at fixed slot positions for consistent framing.
 
+    Shows only the first 4 boxes (the pick window) to prevent visual overlap.
+    Each box is proportionally scaled to fit within its slot.
     Every frame renders the same belt size and bounding volume, so the camera
     never auto-scales when boxes are added or removed.
     """
     BELT_LENGTH = 1200.0   # Fixed length (matches pallet width for visual balance)
     BELT_WIDTH = 400.0     # Fixed width
     MAX_SCENE_Z = 700.0    # Fixed ceiling — tallest Rajapack box is 600mm
+    DISPLAY_SLOTS = 4      # Only show pick window (4 grippable boxes)
+    SLOT_PADDING = 0.85    # 85% of slot width available for the box
 
     # Fixed scene frame — always present, anchors the camera to the same region
     frame = pv.Box(bounds=(0, BELT_LENGTH, 0, BELT_WIDTH, 0, MAX_SCENE_Z))
@@ -127,17 +131,23 @@ def _draw_conveyor(plotter: pv.Plotter, buffer_boxes: List[Box], all_remaining: 
     belt = pv.Box(bounds=(0, BELT_LENGTH, 0, BELT_WIDTH, -10, 0))
     plotter.add_mesh(belt, color='slategray', opacity=0.5, show_edges=True, edge_color='dimgray')
 
-    # Place boxes at fixed slot positions (slot 0 = front/left, slot N-1 = back/right)
-    # Each slot has a fixed center X regardless of how many boxes are currently visible.
-    if buffer_boxes:
-        slot_width = BELT_LENGTH / buffer_capacity
+    # Only show the first DISPLAY_SLOTS boxes (the pick window)
+    visible_boxes = buffer_boxes[:DISPLAY_SLOTS] if buffer_boxes else []
 
-        for i, box in enumerate(buffer_boxes):
+    if visible_boxes:
+        slot_width = BELT_LENGTH / DISPLAY_SLOTS
+        max_box_width = slot_width * SLOT_PADDING  # Max visual width per slot
+
+        for i, box in enumerate(visible_boxes):
+            # Scale proportionally if box is wider than slot allows
+            scale = min(1.0, max_box_width / max(box.length, 1.0))
+            vis_l = box.length * scale
+            vis_w = box.width * scale
+            vis_h = box.height * scale
+
             x_center = slot_width * i + slot_width / 2
-            x_pos = max(0.0, x_center - box.length / 2)
-            if x_pos + box.length > BELT_LENGTH:
-                x_pos = BELT_LENGTH - box.length
-            y_pos = (BELT_WIDTH - box.width) / 2
+            x_pos = x_center - vis_l / 2
+            y_pos = (BELT_WIDTH - vis_w) / 2
             z_pos = 0.0
 
             is_highlighted = (highlight_box_id is not None and box.id == highlight_box_id)
@@ -146,9 +156,9 @@ def _draw_conveyor(plotter: pv.Plotter, buffer_boxes: List[Box], all_remaining: 
             color = _get_box_color(box.id)
 
             b = pv.Box(bounds=(
-                x_pos, x_pos + box.length,
-                y_pos, y_pos + box.width,
-                z_pos, z_pos + box.height,
+                x_pos, x_pos + vis_l,
+                y_pos, y_pos + vis_w,
+                z_pos, z_pos + vis_h,
             ))
             plotter.add_mesh(
                 b, color=color, show_edges=True, edge_color=edge, line_width=lw,

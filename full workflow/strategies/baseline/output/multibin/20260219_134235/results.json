@@ -1,0 +1,282 @@
+{
+  "total_boxes": 15,
+  "total_placed": 15,
+  "total_rejected": 0,
+  "total_unplaceable": 0,
+  "bins_used": 2,
+  "bins_closed": 0,
+  "aggregate_fill_rate": 0.225688,
+  "mean_fill_rate": 0.225688,
+  "max_fill_rate": 0.354421,
+  "min_fill_rate": 0.096955,
+  "computation_time_ms": 5206.43,
+  "bin_results": [
+    {
+      "bin_id": 0,
+      "fill_rate": 0.354421,
+      "boxes_placed": 14,
+      "boxes_rejected": 0,
+      "max_height": 40.7,
+      "close_reason": "end_of_episode",
+      "was_closed": false,
+      "placements": [
+        {
+          "step": 0,
+          "box_id": 1,
+          "dims": [
+            10.6,
+            23.4,
+            21.9
+          ],
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 1,
+          "box_id": 2,
+          "dims": [
+            27.3,
+            7.2,
+            15.5
+          ],
+          "position": [
+            0.0,
+            23.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 2,
+          "box_id": 0,
+          "dims": [
+            21.0,
+            5.6,
+            11.9
+          ],
+          "position": [
+            0.0,
+            30.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 3,
+          "box_id": 5,
+          "dims": [
+            18.6,
+            10.5,
+            19.7
+          ],
+          "position": [
+            11.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 4,
+          "box_id": 6,
+          "dims": [
+            25.2,
+            5.2,
+            25.1
+          ],
+          "position": [
+            11.0,
+            10.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 5,
+          "box_id": 7,
+          "dims": [
+            22.5,
+            13.5,
+            8.9
+          ],
+          "position": [
+            27.0,
+            15.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 6,
+          "box_id": 8,
+          "dims": [
+            28.9,
+            13.4,
+            7.3
+          ],
+          "position": [
+            27.0,
+            15.0,
+            8.9
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 7,
+          "box_id": 9,
+          "dims": [
+            26.2,
+            7.4,
+            20.1
+          ],
+          "position": [
+            21.0,
+            30.0,
+            0.0
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 8,
+          "box_id": 10,
+          "dims": [
+            23.2,
+            25.2,
+            18.4
+          ],
+          "position": [
+            36.0,
+            0.0,
+            16.2
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 9,
+          "box_id": 11,
+          "dims": [
+            29.3,
+            14.5,
+            18.8
+          ],
+          "position": [
+            10.0,
+            25.0,
+            20.1
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 10,
+          "box_id": 4,
+          "dims": [
+            10.0,
+            5.7,
+            21.2
+          ],
+          "position": [
+            11.0,
+            15.0,
+            0.0
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 11,
+          "box_id": 13,
+          "dims": [
+            22.6,
+            19.4,
+            6.1
+          ],
+          "position": [
+            20.0,
+            0.0,
+            34.599999999999994
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 12,
+          "box_id": 3,
+          "dims": [
+            5.7,
+            10.5,
+            17.6
+          ],
+          "position": [
+            47.0,
+            29.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 13,
+          "box_id": 14,
+          "dims": [
+            10.7,
+            12.2,
+            7.0
+          ],
+          "position": [
+            47.0,
+            25.0,
+            17.6
+          ],
+          "orientation": 0
+        }
+      ]
+    },
+    {
+      "bin_id": 1,
+      "fill_rate": 0.096955,
+      "boxes_placed": 1,
+      "boxes_rejected": 0,
+      "max_height": 26.5,
+      "close_reason": "end_of_episode",
+      "was_closed": false,
+      "placements": [
+        {
+          "step": 0,
+          "box_id": 12,
+          "dims": [
+            25.7,
+            20.5,
+            26.5
+          ],
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 0
+        }
+      ]
+    }
+  ],
+  "config": {
+    "n_active_bins": 2,
+    "buffer_size": 3,
+    "strategy_name": "baseline",
+    "bin_config": {
+      "length": 60,
+      "width": 40,
+      "height": 60,
+      "resolution": 1.0
+    },
+    "bin_selection": "best_fit",
+    "buffer_policy": "best_fit_score",
+    "replacement_policy": "combined",
+    "fill_threshold": 0.85,
+    "height_threshold_ratio": 0.9,
+    "max_consecutive_rejects": 3,
+    "enable_stability": false,
+    "min_support_ratio": 0.8,
+    "allow_all_orientations": false
+  }
+}

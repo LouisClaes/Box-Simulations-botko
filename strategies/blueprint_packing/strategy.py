@@ -411,6 +411,10 @@ class BlueprintPackingStrategy(BaseStrategy):
                     if support < cfg.min_support_ratio:
                         continue
 
+                # Margin check (box-to-box gap enforcement)
+                if not bin_state.is_margin_clear(x, y, ol, ow, z, oh):
+                    continue
+
                 return (x, y, oidx)
 
         return None
@@ -494,6 +498,10 @@ class BlueprintPackingStrategy(BaseStrategy):
                 if cfg.enable_stability and z > 0.5:
                     if support < cfg.min_support_ratio:
                         continue
+
+                # Margin check (box-to-box gap enforcement)
+                if not bin_state.is_margin_clear(cx, cy, ol, ow, z, oh):
+                    continue
 
                 # Score: high support + low height.
                 height_norm = z / bin_cfg.height if bin_cfg.height > 0 else 0.0

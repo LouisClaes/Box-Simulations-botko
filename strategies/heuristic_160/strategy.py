@@ -700,6 +700,10 @@ class Heuristic160Strategy(BaseStrategy):
                     if cfg.enable_stability and support_ratio < cfg.min_support_ratio:
                         continue
 
+                # Margin check (box-to-box gap enforcement)
+                if not bin_state.is_margin_clear(px, py, ol, ow, z, oh):
+                    continue
+
                 # Map local orientation index back to the global index that
                 # matches the ordered list returned by Orientation.get_*().
                 # Since feasible_orientations is a filtered view of the
@@ -767,7 +771,7 @@ class Heuristic160Strategy(BaseStrategy):
                             elif cfg.enable_stability and sr < cfg.min_support_ratio:
                                 valid = False
 
-                        if valid:
+                        if valid and bin_state.is_margin_clear(x, y, ol, ow, z, oh):
                             candidate = (z, x, y, oidx)
                             if best is None or candidate < best:
                                 best = candidate

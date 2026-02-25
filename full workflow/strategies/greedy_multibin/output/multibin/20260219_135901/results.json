@@ -1,0 +1,944 @@
+{
+  "total_boxes": 60,
+  "total_placed": 60,
+  "total_rejected": 0,
+  "total_unplaceable": 0,
+  "bins_used": 2,
+  "aggregate_fill_rate": 0.367189,
+  "mean_fill_rate": 0.367189,
+  "max_fill_rate": 0.368201,
+  "min_fill_rate": 0.366177,
+  "computation_time_ms": 5288.97,
+  "bin_results": [
+    {
+      "bin_id": 0,
+      "fill_rate": 0.366177,
+      "boxes_placed": 30,
+      "max_height": 39.9,
+      "placements": [
+        {
+          "step": 0,
+          "box_id": 1,
+          "dims": [
+            8.3,
+            16.0,
+            15.2
+          ],
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 1,
+          "box_id": 2,
+          "dims": [
+            18.4,
+            6.3,
+            11.3
+          ],
+          "position": [
+            0.0,
+            16.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 2,
+          "box_id": 9,
+          "dims": [
+            6.5,
+            17.7,
+            14.1
+          ],
+          "position": [
+            0.0,
+            22.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 3,
+          "box_id": 11,
+          "dims": [
+            19.6,
+            10.7,
+            13.3
+          ],
+          "position": [
+            6.0,
+            22.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 4,
+          "box_id": 12,
+          "dims": [
+            17.4,
+            14.3,
+            17.9
+          ],
+          "position": [
+            8.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 5,
+          "box_id": 17,
+          "dims": [
+            9.0,
+            8.1,
+            19.0
+          ],
+          "position": [
+            18.0,
+            14.0,
+            0.0
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 6,
+          "box_id": 19,
+          "dims": [
+            15.9,
+            7.5,
+            10.7
+          ],
+          "position": [
+            25.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 7,
+          "box_id": 21,
+          "dims": [
+            15.3,
+            17.6,
+            16.6
+          ],
+          "position": [
+            26.0,
+            22.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 8,
+          "box_id": 24,
+          "dims": [
+            18.1,
+            9.7,
+            14.8
+          ],
+          "position": [
+            27.0,
+            8.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 9,
+          "box_id": 26,
+          "dims": [
+            9.0,
+            8.7,
+            13.4
+          ],
+          "position": [
+            41.0,
+            18.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 10,
+          "box_id": 28,
+          "dims": [
+            11.0,
+            8.3,
+            20.0
+          ],
+          "position": [
+            41.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 11,
+          "box_id": 30,
+          "dims": [
+            14.4,
+            6.6,
+            16.9
+          ],
+          "position": [
+            6.0,
+            33.0,
+            0.0
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 12,
+          "box_id": 33,
+          "dims": [
+            17.9,
+            5.2,
+            15.8
+          ],
+          "position": [
+            41.0,
+            27.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 13,
+          "box_id": 34,
+          "dims": [
+            13.1,
+            15.2,
+            9.0
+          ],
+          "position": [
+            0.0,
+            17.0,
+            14.1
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 14,
+          "box_id": 35,
+          "dims": [
+            14.6,
+            6.7,
+            11.5
+          ],
+          "position": [
+            41.0,
+            32.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 15,
+          "box_id": 36,
+          "dims": [
+            11.8,
+            19.3,
+            18.1
+          ],
+          "position": [
+            27.0,
+            0.0,
+            14.8
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 16,
+          "box_id": 39,
+          "dims": [
+            14.1,
+            14.6,
+            7.3
+          ],
+          "position": [
+            41.0,
+            17.0,
+            15.8
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 17,
+          "box_id": 41,
+          "dims": [
+            13.0,
+            5.0,
+            9.9
+          ],
+          "position": [
+            45.0,
+            8.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 18,
+          "box_id": 42,
+          "dims": [
+            18.9,
+            5.3,
+            18.2
+          ],
+          "position": [
+            41.0,
+            32.0,
+            11.5
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 19,
+          "box_id": 44,
+          "dims": [
+            18.2,
+            19.2,
+            6.3
+          ],
+          "position": [
+            0.0,
+            6.0,
+            23.1
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 20,
+          "box_id": 47,
+          "dims": [
+            13.2,
+            9.0,
+            18.1
+          ],
+          "position": [
+            45.0,
+            8.0,
+            9.9
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 21,
+          "box_id": 49,
+          "dims": [
+            15.9,
+            8.0,
+            9.7
+          ],
+          "position": [
+            15.0,
+            25.0,
+            16.6
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 22,
+          "box_id": 51,
+          "dims": [
+            12.8,
+            6.8,
+            8.4
+          ],
+          "position": [
+            20.0,
+            33.0,
+            16.6
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 23,
+          "box_id": 52,
+          "dims": [
+            10.1,
+            13.8,
+            8.5
+          ],
+          "position": [
+            31.0,
+            19.0,
+            16.6
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 24,
+          "box_id": 53,
+          "dims": [
+            6.1,
+            8.3,
+            14.5
+          ],
+          "position": [
+            52.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 25,
+          "box_id": 55,
+          "dims": [
+            6.1,
+            8.6,
+            15.0
+          ],
+          "position": [
+            39.0,
+            8.0,
+            14.8
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 26,
+          "box_id": 56,
+          "dims": [
+            7.0,
+            8.2,
+            19.0
+          ],
+          "position": [
+            52.0,
+            0.0,
+            14.5
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 27,
+          "box_id": 57,
+          "dims": [
+            13.6,
+            12.1,
+            16.8
+          ],
+          "position": [
+            0.0,
+            25.0,
+            23.1
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 28,
+          "box_id": 15,
+          "dims": [
+            8.5,
+            6.5,
+            9.2
+          ],
+          "position": [
+            0.0,
+            0.0,
+            15.2
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 29,
+          "box_id": 29,
+          "dims": [
+            12.6,
+            6.4,
+            5.7
+          ],
+          "position": [
+            8.0,
+            0.0,
+            17.9
+          ],
+          "orientation": 0
+        }
+      ]
+    },
+    {
+      "bin_id": 1,
+      "fill_rate": 0.368201,
+      "boxes_placed": 30,
+      "max_height": 37.0,
+      "placements": [
+        {
+          "step": 0,
+          "box_id": 5,
+          "dims": [
+            13.2,
+            8.3,
+            13.8
+          ],
+          "position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 1,
+          "box_id": 6,
+          "dims": [
+            17.1,
+            5.1,
+            17.1
+          ],
+          "position": [
+            0.0,
+            8.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 2,
+          "box_id": 8,
+          "dims": [
+            19.4,
+            10.0,
+            6.4
+          ],
+          "position": [
+            0.0,
+            13.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 3,
+          "box_id": 10,
+          "dims": [
+            17.1,
+            15.9,
+            13.0
+          ],
+          "position": [
+            0.0,
+            23.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 4,
+          "box_id": 13,
+          "dims": [
+            13.7,
+            15.6,
+            5.7
+          ],
+          "position": [
+            17.0,
+            23.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 5,
+          "box_id": 7,
+          "dims": [
+            15.5,
+            10.1,
+            7.3
+          ],
+          "position": [
+            17.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 6,
+          "box_id": 0,
+          "dims": [
+            14.6,
+            5.4,
+            9.1
+          ],
+          "position": [
+            19.0,
+            10.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 7,
+          "box_id": 16,
+          "dims": [
+            14.5,
+            10.5,
+            10.6
+          ],
+          "position": [
+            31.0,
+            15.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 8,
+          "box_id": 18,
+          "dims": [
+            14.7,
+            14.1,
+            7.6
+          ],
+          "position": [
+            31.0,
+            25.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 9,
+          "box_id": 20,
+          "dims": [
+            19.8,
+            14.6,
+            13.4
+          ],
+          "position": [
+            34.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 10,
+          "box_id": 4,
+          "dims": [
+            5.4,
+            8.0,
+            14.7
+          ],
+          "position": [
+            19.0,
+            15.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 11,
+          "box_id": 23,
+          "dims": [
+            9.0,
+            8.2,
+            19.1
+          ],
+          "position": [
+            45.0,
+            15.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 12,
+          "box_id": 25,
+          "dims": [
+            18.7,
+            10.9,
+            11.9
+          ],
+          "position": [
+            18.0,
+            25.0,
+            7.6
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 13,
+          "box_id": 27,
+          "dims": [
+            8.9,
+            13.8,
+            18.5
+          ],
+          "position": [
+            46.0,
+            23.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 14,
+          "box_id": 3,
+          "dims": [
+            5.4,
+            8.3,
+            12.6
+          ],
+          "position": [
+            24.0,
+            15.0,
+            0.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 15,
+          "box_id": 31,
+          "dims": [
+            6.0,
+            11.3,
+            10.7
+          ],
+          "position": [
+            54.0,
+            0.0,
+            0.0
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 16,
+          "box_id": 32,
+          "dims": [
+            12.9,
+            19.9,
+            19.6
+          ],
+          "position": [
+            0.0,
+            13.0,
+            13.0
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 17,
+          "box_id": 37,
+          "dims": [
+            12.5,
+            9.0,
+            7.7
+          ],
+          "position": [
+            17.0,
+            0.0,
+            7.3
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 18,
+          "box_id": 38,
+          "dims": [
+            18.7,
+            18.1,
+            9.5
+          ],
+          "position": [
+            17.0,
+            0.0,
+            15.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 19,
+          "box_id": 40,
+          "dims": [
+            16.4,
+            13.1,
+            16.7
+          ],
+          "position": [
+            36.0,
+            0.0,
+            13.4
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 20,
+          "box_id": 43,
+          "dims": [
+            17.5,
+            9.6,
+            5.9
+          ],
+          "position": [
+            37.0,
+            23.0,
+            18.5
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 21,
+          "box_id": 45,
+          "dims": [
+            6.0,
+            12.3,
+            16.4
+          ],
+          "position": [
+            54.0,
+            11.0,
+            0.0
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 22,
+          "box_id": 46,
+          "dims": [
+            16.5,
+            6.9,
+            12.1
+          ],
+          "position": [
+            0.0,
+            33.0,
+            13.0
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 23,
+          "box_id": 48,
+          "dims": [
+            11.3,
+            8.2,
+            13.1
+          ],
+          "position": [
+            0.0,
+            0.0,
+            13.8
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 24,
+          "box_id": 50,
+          "dims": [
+            19.9,
+            14.7,
+            11.6
+          ],
+          "position": [
+            13.0,
+            18.0,
+            19.5
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 25,
+          "box_id": 54,
+          "dims": [
+            18.6,
+            8.4,
+            17.9
+          ],
+          "position": [
+            36.0,
+            13.0,
+            19.1
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 26,
+          "box_id": 58,
+          "dims": [
+            17.1,
+            7.9,
+            6.5
+          ],
+          "position": [
+            33.0,
+            21.0,
+            24.4
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 27,
+          "box_id": 59,
+          "dims": [
+            11.5,
+            11.4,
+            12.0
+          ],
+          "position": [
+            11.0,
+            0.0,
+            24.5
+          ],
+          "orientation": 0
+        },
+        {
+          "step": 28,
+          "box_id": 14,
+          "dims": [
+            9.3,
+            8.4,
+            6.2
+          ],
+          "position": [
+            34.0,
+            29.0,
+            24.4
+          ],
+          "orientation": 1
+        },
+        {
+          "step": 29,
+          "box_id": 22,
+          "dims": [
+            5.5,
+            8.4,
+            9.7
+          ],
+          "position": [
+            54.0,
+            0.0,
+            10.7
+          ],
+          "orientation": 1
+        }
+      ]
+    }
+  ],
+  "config": {
+    "n_bins": 2,
+    "buffer_size": 5,
+    "buffer_policy": "largest_first",
+    "bin_config": {
+      "length": 60.0,
+      "width": 40.0,
+      "height": 60.0,
+      "resolution": 1.0
+    },
+    "enable_stability": false,
+    "min_support_ratio": 0.8,
+    "allow_all_orientations": false
+  }
+}

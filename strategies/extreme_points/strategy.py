@@ -163,6 +163,10 @@ class ExtremePointsStrategy(BaseStrategy):
                     if support_ratio < cfg.min_support_ratio:
                         continue
 
+                # Margin check (box-to-box gap enforcement)
+                if not bin_state.is_margin_clear(ex, ey, ol, ow, z, oh):
+                    continue
+
                 # --- Scoring ---
                 score = self._compute_score(
                     ex, ey, z, ol, ow, oh, bin_state, bin_cfg

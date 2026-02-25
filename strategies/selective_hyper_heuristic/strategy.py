@@ -449,9 +449,14 @@ class SelectiveHyperHeuristicStrategy(BaseStrategy):
                 return False, 0.0
             if cfg.enable_stability and sr < cfg.min_support_ratio:
                 return False, 0.0
-            return True, sr
+        else:
+            sr = 1.0
 
-        return True, 1.0
+        # Margin check (box-to-box gap enforcement)
+        if not bin_state.is_margin_clear(x, y, ol, ow, z, oh):
+            return False, 0.0
+
+        return True, sr
 
     # ── H1: WallE scoring ─────────────────────────────────────────────────
 
