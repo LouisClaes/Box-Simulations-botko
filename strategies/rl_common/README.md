@@ -2,7 +2,7 @@
 
 ## Overview
 
-This package contains 5 RL-based strategies for the Botko BV dual-pallet online bin packing problem, plus shared infrastructure for training, evaluation, and HPC deployment.
+This package contains 6 RL-based strategies for the Botko BV dual-pallet online bin packing problem, plus shared infrastructure for training, evaluation, and HPC deployment.
 
 ### Problem Setup
 
@@ -35,6 +35,7 @@ This package contains 5 RL-based strategies for the Botko BV dual-pallet online 
 | 3 | `rl_a2c_masked` | A2C + Feasibility Mask | Zhao 2021 (AAAI) | Learned mask predictor | ~16h GPU |
 | 4 | `rl_hybrid_hh` | Q-learning Hyper-Heuristic | **Novel** | Meta-learning over heuristics | ~4h CPU |
 | 5 | `rl_pct_transformer` | PPO + Transformer | Zhao 2022 (ICLR) | Standard Transformer for PCT | ~16h GPU |
+| 6 | `rl_mcts_hybrid` | Hierarchical PPO + MCTS | PCT + MuZero-inspired planning | Lookahead-aware RL policy | ~24h GPU |
 
 ### Strategy Comparison
 
@@ -93,6 +94,13 @@ This package contains 5 RL-based strategies for the Botko BV dual-pallet online 
 - **Training**: PPO, variable action space, candidate generation
 - **Strength**: Handles variable actions naturally, high quality
 
+### 6. MCTS Hybrid (`rl_mcts_hybrid`)
+- **State**: Shared encoder over bins + conveyor/buffer context
+- **Action**: High-level box/bin decision + low-level candidate pointer
+- **Network**: Hierarchical actor-critic + world-model auxiliary heads
+- **Training**: Curriculum PPO, imitation warm-start, robust resume/checkpointing
+- **Strength**: Planning-aware policy with optional MCTS lookahead
+
 ## File Structure
 
 ```
@@ -108,8 +116,9 @@ strategies/
 │   └── hpc/
 │       ├── requirements.txt    ← Python dependencies
 │       ├── setup_hpc.sh        ← One-time HPC setup
-│       ├── train_all.sh        ← Launch all training jobs
-│       ├── evaluate_all.sh     ← Evaluate all trained models
+│       ├── run_rl_pipeline.py  ← Unified train/eval/visualize orchestrator
+│       ├── train_all.sh        ← One-command launcher wrapper
+│       ├── evaluate_all.sh     ← Evaluate + visualize existing run
 │       └── README.md           ← HPC guide
 │
 ├── rl_dqn/                     ← Strategy 1: Double DQN
@@ -151,7 +160,7 @@ strategies/
 │   ├── config.py
 │   └── README.md
 │
-└── rl_pct_transformer/         ← Strategy 5: PCT Transformer
+├── rl_pct_transformer/         ← Strategy 5: PCT Transformer
     ├── __init__.py
     ├── network.py              ← Transformer encoder-decoder
     ├── candidate_generator.py  ← Placement candidate generation
@@ -160,6 +169,16 @@ strategies/
     ├── strategy.py
     ├── config.py
     └── README.md
+
+└── rl_mcts_hybrid/             ← Strategy 6: Hierarchical PPO + MCTS
+    ├── config.py
+    ├── network.py
+    ├── mcts.py
+    ├── candidate_generator.py
+    ├── void_detector.py
+    ├── train.py
+    ├── evaluate.py
+    └── DOCUMENTATION.md
 ```
 
 ## Usage After Training

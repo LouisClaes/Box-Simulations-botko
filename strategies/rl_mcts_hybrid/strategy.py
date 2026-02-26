@@ -242,8 +242,8 @@ def _build_hl_action_mask(
     n_actions = config.high_level_actions
     mask = np.zeros(n_actions, dtype=np.float32)
 
-    pw = config.pick_window
-    nb = config.num_bins
+    pw = max(1, min(config.pick_window, grippable_count))
+    nb = max(1, min(config.num_bins, num_bins))
 
     for box_i in range(pw):
         for bin_j in range(nb):
@@ -281,6 +281,8 @@ def _build_hl_action_mask(
 def _decode_hl_action(
     action_idx: int,
     config: MCTSHybridConfig,
+    active_pick_window: Optional[int] = None,
+    active_num_bins: Optional[int] = None,
 ) -> Tuple[str, int, int]:
     """
     Decode a high-level action index into its semantic meaning.
@@ -289,8 +291,8 @@ def _decode_hl_action(
         (action_type, box_idx, bin_idx)
         action_type: "place", "skip", or "reconsider"
     """
-    pw = config.pick_window
-    nb = config.num_bins
+    pw = max(1, min(config.pick_window, active_pick_window or config.pick_window))
+    nb = max(1, min(config.num_bins, active_num_bins or config.num_bins))
 
     skip_idx = pw * nb
     reconsider_idx = pw * nb + 1
@@ -299,10 +301,11 @@ def _decode_hl_action(
         return "skip", -1, -1
     elif action_idx == reconsider_idx:
         return "reconsider", -1, -1
-    else:
+    elif action_idx < skip_idx:
         box_idx = action_idx // nb
         bin_idx = action_idx % nb
         return "place", box_idx, bin_idx
+    return "skip", -1, -1
 
 
 # ---------------------------------------------------------------------------
@@ -466,10 +469,11 @@ class RLMCTSHybridStrategy(BaseStrategy):
         # Pad to max_candidates
         max_cands = config.max_candidates
         padded_feats = np.zeros((1, max_cands, config.candidate_input_dim), dtype=np.float32)
-        padded_feats[0, :n_cands] = cand_feats[:max_cands]
+        valid_cands = min(n_cands, max_cands)
+        padded_feats[0, :valid_cands] = cand_feats[:valid_cands]
 
         cand_mask = np.zeros((1, max_cands), dtype=bool)
-        cand_mask[0, :min(n_cands, max_cands)] = True
+        cand_mask[0, :valid_cands] = True
 
         cand_t = _torch.as_tensor(padded_feats, device=device)
         mask_t = _torch.as_tensor(cand_mask, device=device)
@@ -735,7 +739,7 @@ class RLMCTSHybridMultiBinStrategy(MultiBinStrategy):
             # High-level action mask
             grippable_count = max(1, len(self._grippable))
             hl_mask_np = _build_hl_action_mask(
-                grippable_count, config.num_bins, bin_states, config,
+                grippable_count, len(bin_states), bin_states, config,
             )
             hl_mask = _torch.as_tensor(
                 hl_mask_np.reshape(1, -1), device=device,
@@ -748,7 +752,12 @@ class RLMCTSHybridMultiBinStrategy(MultiBinStrategy):
             )
 
         hl_action_idx = int(hl_out.action.item())
-        action_type, box_idx, bin_idx = _decode_hl_action(hl_action_idx, config)
+        action_type, box_idx, bin_idx = _decode_hl_action(
+            hl_action_idx,
+            config,
+            active_pick_window=grippable_count,
+            active_num_bins=len(bin_states),
+        )
 
         if action_type == "skip":
             return None  # Caller should advance conveyor
@@ -791,6 +800,26 @@ class RLMCTSHybridMultiBinStrategy(MultiBinStrategy):
         action_idx = int(ll_out.action.item())
         if action_idx >= n_cands:
             action_idx = 0
+
+        if self._use_mcts and self._mcts_planner is not None:
+            try:
+                best_hl, best_ll, _stats = self._mcts_planner.search(
+                    model=model,
+                    global_state=global_state,
+                    hl_probs=hl_out.probs.detach(),
+                    hl_mask=hl_mask,
+                    ll_probs_per_hl={hl_action_idx: ll_out.probs.detach()},
+                    ll_masks_per_hl={hl_action_idx: mask_t},
+                    candidate_features_per_hl={hl_action_idx: cand_t},
+                )
+                if best_hl == hl_action_idx and 0 <= best_ll < n_cands:
+                    action_idx = int(best_ll)
+            except Exception as exc:
+                warnings.warn(
+                    f"[rl_mcts_hybrid_multibin] MCTS refinement failed: {exc}. "
+                    "Using policy action.",
+                    RuntimeWarning,
+                )
 
         selected = candidates[action_idx]
 

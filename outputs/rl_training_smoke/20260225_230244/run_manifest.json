@@ -1,0 +1,101 @@
+{
+  "created_at": "2026-02-25T22:02:44Z",
+  "host": "Laptop-Louis",
+  "mode": "full",
+  "profile": "quick",
+  "run_dir": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_230244",
+  "workflow_root": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python",
+  "strategies": [
+    "rl_mcts_hybrid",
+    "rl_dqn"
+  ],
+  "gpu_ids": [],
+  "jobs": {
+    "rl_mcts_hybrid": {
+      "train": {
+        "command": [
+          "C:\\Users\\Louis\\anaconda3\\python.exe",
+          "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\strategies\\rl_mcts_hybrid\\train.py",
+          "--output_dir",
+          "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_230244\\rl_mcts_hybrid",
+          "--total_timesteps",
+          "8192",
+          "--num_envs",
+          "2",
+          "--lr",
+          "3e-4",
+          "--seed",
+          "42",
+          "--resume",
+          "auto",
+          "--skip_imitation",
+          "--checkpoint_interval",
+          "1024",
+          "--eval_interval",
+          "1024",
+          "--log_interval",
+          "256"
+        ],
+        "log_path": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_230244\\logs\\train_rl_mcts_hybrid.log",
+        "return_code": 0,
+        "duration_s": 0.0,
+        "gpu_id": "dryrun-gpu",
+        "started_at": "2026-02-25T22:18:01Z",
+        "finished_at": "2026-02-25T22:18:01Z",
+        "stage": "train",
+        "strategy": "rl_mcts_hybrid"
+      },
+      "eval": {
+        "strategy": "rl_mcts_hybrid",
+        "stage": "evaluate",
+        "status": "skipped_no_checkpoint",
+        "checkpoint": null
+      }
+    },
+    "rl_dqn": {
+      "train": {
+        "command": [
+          "C:\\Users\\Louis\\anaconda3\\python.exe",
+          "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\strategies\\rl_dqn\\train.py",
+          "--output_dir",
+          "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_230244\\rl_dqn",
+          "--episodes",
+          "200",
+          "--batch_size",
+          "64",
+          "--lr",
+          "0.001"
+        ],
+        "log_path": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_230244\\logs\\train_rl_dqn.log",
+        "return_code": 0,
+        "duration_s": 0.0,
+        "gpu_id": "dryrun-gpu",
+        "started_at": "2026-02-25T22:18:01Z",
+        "finished_at": "2026-02-25T22:18:01Z",
+        "stage": "train",
+        "strategy": "rl_dqn"
+      }
+    }
+  },
+  "last_invocation": {
+    "timestamp": "2026-02-25T22:18:01Z",
+    "argv": [
+      "strategies/rl_common/hpc/run_rl_pipeline.py",
+      "--mode",
+      "full",
+      "--profile",
+      "quick",
+      "--dry_run",
+      "--output_root",
+      "outputs/rl_training_smoke",
+      "--strategies",
+      "rl_mcts_hybrid,rl_dqn"
+    ],
+    "mode": "full",
+    "run_dir": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_230244",
+    "strategies": [
+      "rl_mcts_hybrid",
+      "rl_dqn"
+    ]
+  }
+}

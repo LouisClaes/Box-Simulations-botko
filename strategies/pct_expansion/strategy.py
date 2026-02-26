@@ -93,11 +93,14 @@ SCHEME_CP_FILL_THRESHOLD: float = 0.15   # Use CP below this fill rate
 SCHEME_EMS_FILL_THRESHOLD: float = 0.65  # Use EMS up to this fill rate
 SCHEME_CP_BOX_THRESHOLD: int = 5         # Use CP if fewer boxes placed
 
-# Scoring weights
-WEIGHT_VOL_EFFICIENCY: float = 3.0
-WEIGHT_HEIGHT: float = 2.0
-WEIGHT_SUPPORT: float = 1.0
-WEIGHT_POSITION: float = 0.01
+# Scoring weights (candidate-dependent dense packing + anti-tower terms).
+WEIGHT_CONTACT: float = 5.0
+WEIGHT_SUPPORT: float = 1.5
+WEIGHT_FOOTPRINT: float = 0.8
+WEIGHT_HEIGHT: float = 2.5
+WEIGHT_HEIGHT_GROWTH: float = 6.0
+WEIGHT_TOWER: float = 4.0
+WEIGHT_POSITION: float = 0.3
 
 # Minimum EMS volume (cm^3) below which an EMS is discarded as trivially small.
 MIN_EMS_VOLUME: float = 1.0
@@ -115,6 +118,12 @@ CP_RECENT_BOXES: int = 20
 
 # Tolerance (cm) used when comparing coordinates for deduplication.
 COORD_TOLERANCE: float = 1e-6
+
+# Heightmap contact tolerance for contact-ratio scoring.
+CONTACT_TOLERANCE: float = 0.5
+
+# Cap for dense fallback grid candidate count.
+MAX_FALLBACK_GRID_CANDIDATES: int = 20000
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -486,6 +495,105 @@ def _generate_ems_candidates(
     return {(e.x1, e.y1) for e in ems_list}
 
 
+def _augment_margin_candidates(
+    candidates: Set[Tuple[float, float]],
+    bin_state: BinState,
+    valid_orientations: List[Tuple[int, float, float, float]],
+    dense: bool = False,
+) -> Set[Tuple[float, float]]:
+    """
+    Add margin-aware, orientation-aware anchors to a candidate set.
+
+    This keeps CP/EP/EMS/EV semantics but densifies around legal contact
+    surfaces: walls, box edges, and offsets based on incoming orientations.
+    """
+    bin_cfg = bin_state.config
+    m = max(0.0, bin_cfg.margin)
+    x_min = m
+    y_min = m
+    x_max = bin_cfg.length - m
+    y_max = bin_cfg.width - m
+
+    if x_min > x_max or y_min > y_max:
+        return {(0.0, 0.0)}
+
+    out: Set[Tuple[float, float]] = set()
+    lengths = sorted({ol for _, ol, _, _ in valid_orientations})
+    widths = sorted({ow for _, _, ow, _ in valid_orientations})
+
+    def add(cx: float, cy: float) -> None:
+        if (x_min - COORD_TOLERANCE <= cx <= x_max + COORD_TOLERANCE
+                and y_min - COORD_TOLERANCE <= cy <= y_max + COORD_TOLERANCE):
+            out.add((round(cx, 3), round(cy, 3)))
+
+    for cx, cy in candidates:
+        add(cx, cy)
+
+    # Legal wall anchors (respecting wall margin).
+    add(x_min, y_min)
+    add(x_min, y_max)
+    add(x_max, y_min)
+    add(x_max, y_max)
+
+    # Anchors around placed boxes.
+    for p in bin_state.placed_boxes:
+        x_anchors = [p.x, p.x_max, p.x_max + m]
+        y_anchors = [p.y, p.y_max, p.y_max + m]
+
+        for ol in lengths:
+            x_anchors.extend([p.x - ol, p.x - ol - m, p.x_max - ol])
+        for ow in widths:
+            y_anchors.extend([p.y - ow, p.y - ow - m, p.y_max - ow])
+
+        for cx in x_anchors:
+            for cy in y_anchors:
+                add(cx, cy)
+
+        if dense:
+            local_step = max(1.0, bin_cfg.resolution * 0.5)
+            jitters = (0.0, -local_step, local_step)
+            for bx in (p.x, p.x_max + m):
+                for by in (p.y, p.y_max + m):
+                    for jx in jitters:
+                        for jy in jitters:
+                            add(bx + jx, by + jy)
+
+    return out
+
+
+def _generate_dense_grid_candidates(
+    bin_state: BinState,
+    step: float,
+) -> Set[Tuple[float, float]]:
+    """Generate a dense, margin-compliant grid candidate set for fallback."""
+    bin_cfg = bin_state.config
+    m = max(0.0, bin_cfg.margin)
+    x_min = m
+    y_min = m
+    x_max = bin_cfg.length - m
+    y_max = bin_cfg.width - m
+
+    if x_min > x_max or y_min > y_max:
+        return {(0.0, 0.0)}
+
+    s = max(1.0, step)
+    out: Set[Tuple[float, float]] = set()
+    count = 0
+
+    x = x_min
+    while x <= x_max + COORD_TOLERANCE:
+        y = y_min
+        while y <= y_max + COORD_TOLERANCE:
+            out.add((round(x, 3), round(y, 3)))
+            count += 1
+            if count >= MAX_FALLBACK_GRID_CANDIDATES:
+                return out
+            y += s
+        x += s
+
+    return out
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Strategy class
 # ─────────────────────────────────────────────────────────────────────────────
@@ -552,14 +660,12 @@ class PCTExpansionStrategy(BaseStrategy):
         cfg = self.config
         bin_cfg = cfg.bin
 
-        # --- Resolve allowed orientations ---
         orientations: List[Tuple[float, float, float]] = (
             Orientation.get_all(box.length, box.width, box.height)
             if cfg.allow_all_orientations
             else Orientation.get_flat(box.length, box.width, box.height)
         )
 
-        # Quick early-out: can the box fit in the bin in any orientation?
         valid_orientations: List[Tuple[int, float, float, float]] = []
         for oidx, (ol, ow, oh) in enumerate(orientations):
             if (ol <= bin_cfg.length + COORD_TOLERANCE
@@ -569,87 +675,55 @@ class PCTExpansionStrategy(BaseStrategy):
         if not valid_orientations:
             return None
 
-        # --- Select expansion scheme and generate candidates ---
         fill_rate = bin_state.get_fill_rate()
         num_placed = len(bin_state.placed_boxes)
         scheme = self._select_scheme(fill_rate, num_placed)
 
-        candidates: Set[Tuple[float, float]]
-
-        if scheme == 'cp':
-            candidates = _generate_cp_candidates(bin_state)
-
-        elif scheme == 'ems':
-            ems_list = _recompute_ems_from_placements(
-                bin_state.placed_boxes, bin_cfg
+        base_candidates = self._build_candidates_for_scheme(
+            scheme=scheme,
+            bin_state=bin_state,
+            bin_cfg=bin_cfg,
+        )
+        primary_candidates = _augment_margin_candidates(
+            candidates=base_candidates,
+            bin_state=bin_state,
+            valid_orientations=valid_orientations,
+            dense=False,
+        )
+        best_result = self._find_best_candidate(
+            candidates=primary_candidates,
+            valid_orientations=valid_orientations,
+            bin_state=bin_state,
+            cfg=cfg,
+        )
+        if best_result is not None:
+            return PlacementDecision(
+                x=best_result[0],
+                y=best_result[1],
+                orientation_idx=best_result[2],
             )
-            candidates = _generate_ems_candidates(ems_list)
-            # Fall back to CP if EMS yielded no candidates.
-            if not candidates:
-                candidates = _generate_cp_candidates(bin_state)
 
-        else:  # 'ev' -- union of EP and EMS
-            ems_list = _recompute_ems_from_placements(
-                bin_state.placed_boxes, bin_cfg
-            )
-            candidates = _generate_ems_candidates(ems_list)
-            candidates |= _generate_ep_candidates(bin_state)
+        # Fallback pass: broaden candidate family (EV-like union + dense grid).
+        fallback_seed = set(base_candidates)
+        ems_list = _recompute_ems_from_placements(bin_state.placed_boxes, bin_cfg)
+        fallback_seed |= _generate_ems_candidates(ems_list)
+        fallback_seed |= _generate_ep_candidates(bin_state)
 
-        # Always guarantee at least the origin so the bin is never skipped.
-        candidates.add((0.0, 0.0))
+        fallback_candidates = _augment_margin_candidates(
+            candidates=fallback_seed,
+            bin_state=bin_state,
+            valid_orientations=valid_orientations,
+            dense=True,
+        )
+        dense_step = max(1.0, bin_cfg.resolution * 0.5)
+        fallback_candidates |= _generate_dense_grid_candidates(bin_state, dense_step)
 
-        # --- Evaluate all (candidate, orientation) pairs ---
-        bin_vol = bin_cfg.volume
-        placed_vol = sum(p.volume for p in bin_state.placed_boxes)
-        remaining_capacity = max(bin_vol - placed_vol, 1.0)
-
-        best_score: float = -float("inf")
-        best_result: Optional[Tuple[float, float, int]] = None  # (x, y, oidx)
-
-        for cx, cy in candidates:
-            for oidx, ol, ow, oh in valid_orientations:
-                # --- Bounds check ---
-                if cx + ol > bin_cfg.length + COORD_TOLERANCE:
-                    continue
-                if cy + ow > bin_cfg.width + COORD_TOLERANCE:
-                    continue
-
-                # --- Resting height (gravity) ---
-                z = bin_state.get_height_at(cx, cy, ol, ow)
-
-                # --- Height limit ---
-                if z + oh > bin_cfg.height + COORD_TOLERANCE:
-                    continue
-
-                # --- Anti-float: enforce MIN_SUPPORT = 0.30 always ---
-                support_ratio = 1.0
-                if z > 0.5:
-                    support_ratio = bin_state.get_support_ratio(
-                        cx, cy, ol, ow, z
-                    )
-                    if support_ratio < MIN_SUPPORT:
-                        continue
-
-                # --- Stricter stability check when enabled ---
-                if cfg.enable_stability and z > 0.5:
-                    if support_ratio < cfg.min_support_ratio:
-                        continue
-
-                # Margin check (box-to-box gap enforcement)
-                if not bin_state.is_margin_clear(cx, cy, ol, ow, z, oh):
-                    continue
-
-                # --- Score ---
-                score = self._compute_score(
-                    cx, cy, z, ol, ow, oh,
-                    support_ratio, box.volume,
-                    remaining_capacity, bin_cfg,
-                )
-
-                if score > best_score:
-                    best_score = score
-                    best_result = (cx, cy, oidx)
-
+        best_result = self._find_best_candidate(
+            candidates=fallback_candidates,
+            valid_orientations=valid_orientations,
+            bin_state=bin_state,
+            cfg=cfg,
+        )
         if best_result is None:
             return None
 
@@ -658,6 +732,135 @@ class PCTExpansionStrategy(BaseStrategy):
             y=best_result[1],
             orientation_idx=best_result[2],
         )
+
+    @staticmethod
+    def _build_candidates_for_scheme(
+        scheme: str,
+        bin_state: BinState,
+        bin_cfg,
+    ) -> Set[Tuple[float, float]]:
+        """Generate the base candidate set for the selected PCT scheme."""
+        candidates: Set[Tuple[float, float]]
+
+        if scheme == "cp":
+            candidates = _generate_cp_candidates(bin_state)
+
+        elif scheme == "ems":
+            ems_list = _recompute_ems_from_placements(
+                bin_state.placed_boxes, bin_cfg
+            )
+            candidates = _generate_ems_candidates(ems_list)
+            if not candidates:
+                candidates = _generate_cp_candidates(bin_state)
+
+        else:  # "ev"
+            ems_list = _recompute_ems_from_placements(
+                bin_state.placed_boxes, bin_cfg
+            )
+            candidates = _generate_ems_candidates(ems_list)
+            candidates |= _generate_ep_candidates(bin_state)
+
+        candidates.add((0.0, 0.0))
+        return candidates
+
+    def _find_best_candidate(
+        self,
+        candidates: Set[Tuple[float, float]],
+        valid_orientations: List[Tuple[int, float, float, float]],
+        bin_state: BinState,
+        cfg: ExperimentConfig,
+    ) -> Optional[Tuple[float, float, int]]:
+        """Evaluate feasible placements and return (x, y, orientation_idx)."""
+        bin_cfg = cfg.bin
+        heightmap = bin_state.heightmap
+        res = bin_cfg.resolution
+        max_xy = max(1.0, bin_cfg.length + bin_cfg.width)
+        current_max_h = bin_state.get_max_height()
+
+        best_score: float = -float("inf")
+        best_result: Optional[Tuple[float, float, int]] = None
+
+        for cx, cy in sorted(candidates, key=lambda p: (p[0] + p[1], p[1], p[0])):
+            for oidx, ol, ow, oh in valid_orientations:
+                if cx + ol > bin_cfg.length + COORD_TOLERANCE:
+                    continue
+                if cy + ow > bin_cfg.width + COORD_TOLERANCE:
+                    continue
+
+                z = bin_state.get_height_at(cx, cy, ol, ow)
+                if z + oh > bin_cfg.height + COORD_TOLERANCE:
+                    continue
+
+                support_ratio = 1.0
+                if z > res * 0.5:
+                    support_ratio = bin_state.get_support_ratio(cx, cy, ol, ow, z)
+                    if support_ratio < MIN_SUPPORT:
+                        continue
+
+                if cfg.enable_stability and z > res * 0.5:
+                    if support_ratio < cfg.min_support_ratio:
+                        continue
+
+                if not bin_state.is_margin_clear(cx, cy, ol, ow, z, oh):
+                    continue
+
+                contact_ratio = self._contact_ratio(
+                    x=cx,
+                    y=cy,
+                    z=z,
+                    ol=ol,
+                    ow=ow,
+                    heightmap=heightmap,
+                    bin_cfg=bin_cfg,
+                    res=res,
+                )
+
+                score = self._compute_score(
+                    x=cx,
+                    y=cy,
+                    z=z,
+                    ol=ol,
+                    ow=ow,
+                    oh=oh,
+                    support_ratio=support_ratio,
+                    contact_ratio=contact_ratio,
+                    current_max_h=current_max_h,
+                    max_xy=max_xy,
+                    bin_cfg=bin_cfg,
+                )
+
+                if score > best_score:
+                    best_score = score
+                    best_result = (cx, cy, oidx)
+
+        return best_result
+
+    @staticmethod
+    def _contact_ratio(
+        x: float,
+        y: float,
+        z: float,
+        ol: float,
+        ow: float,
+        heightmap: np.ndarray,
+        bin_cfg,
+        res: float,
+    ) -> float:
+        """Fraction of footprint cells at the resting height z."""
+        if z < res * 0.5:
+            return 1.0
+
+        gx = int(round(x / res))
+        gy = int(round(y / res))
+        gx_end = min(gx + max(1, int(round(ol / res))), bin_cfg.grid_l)
+        gy_end = min(gy + max(1, int(round(ow / res))), bin_cfg.grid_w)
+
+        region = heightmap[gx:gx_end, gy:gy_end]
+        if region.size == 0:
+            return 0.0
+
+        at_contact = np.sum(np.abs(region - z) <= CONTACT_TOLERANCE)
+        return float(at_contact) / region.size
 
     # ── Scheme selection ─────────────────────────────────────────────────
 
@@ -695,47 +898,65 @@ class PCTExpansionStrategy(BaseStrategy):
         ow: float,
         oh: float,
         support_ratio: float,
-        box_volume: float,
-        remaining_capacity: float,
+        contact_ratio: float,
+        current_max_h: float,
+        max_xy: float,
         bin_cfg,
     ) -> float:
         """
         Compute the placement score for a candidate.
 
         Formula:
-            score = WEIGHT_VOL_EFFICIENCY * vol_efficiency
-                  - WEIGHT_HEIGHT         * height_norm
-                  + WEIGHT_SUPPORT        * support_ratio
-                  - WEIGHT_POSITION       * position_penalty
+            score = + WEIGHT_CONTACT       * contact_ratio
+                    + WEIGHT_SUPPORT       * support_ratio
+                    + WEIGHT_FOOTPRINT     * footprint_norm
+                    - WEIGHT_HEIGHT        * height_norm
+                    - WEIGHT_HEIGHT_GROWTH * height_growth
+                    - WEIGHT_TOWER         * tower_penalty
+                    - WEIGHT_POSITION      * position_penalty
 
         where:
-          vol_efficiency  = box_volume / remaining_capacity
-                            (how much of the remaining space this box fills)
+          contact_ratio   = footprint cells at resting height z
+          support_ratio   = support fraction under the footprint
+          footprint_norm  = (ol * ow) / (bin_length * bin_width)
           height_norm     = z / bin_cfg.height
-                            (normalised placement height; lower is better)
-          support_ratio   = fraction of box base that is supported
-                            (already computed upstream; 1.0 on the floor)
-          position_penalty= (x + y)
-                            (slight back-left-corner preference)
+          height_growth   = max(0, (z + oh - current_max_h) / bin_height)
+          tower_penalty   = top_norm^2 + height_growth * (1 - contact_ratio)
+          position_penalty= (x + y) / max_xy
 
         Args:
             x, y, z:              Candidate position.
             ol, ow, oh:           Oriented box dimensions.
             support_ratio:        Pre-computed support fraction.
-            box_volume:           Volume of the box being placed.
-            remaining_capacity:   Remaining free bin volume (>= 1 to avoid /0).
+            contact_ratio:        Footprint flat-contact ratio at z.
+            current_max_h:        Current bin max height before placement.
+            max_xy:               Normalizer for (x + y) compactness penalty.
             bin_cfg:              Bin configuration (for normalisation).
 
         Returns:
             Scalar score; higher is better.
         """
-        vol_efficiency = box_volume / remaining_capacity
-        height_norm = z / bin_cfg.height if bin_cfg.height > 0.0 else 0.0
-        position_penalty = x + y
+        base_area = max(bin_cfg.length * bin_cfg.width, 1.0)
+        footprint_norm = (ol * ow) / base_area
+
+        if bin_cfg.height > 0.0:
+            height_norm = z / bin_cfg.height
+            top_norm = (z + oh) / bin_cfg.height
+            height_growth = max(0.0, (z + oh - current_max_h) / bin_cfg.height)
+        else:
+            height_norm = 0.0
+            top_norm = 0.0
+            height_growth = 0.0
+
+        tower_penalty = (top_norm * top_norm) + height_growth * (1.0 - contact_ratio)
+        position_penalty = (x + y) / max_xy
 
         return (
-            WEIGHT_VOL_EFFICIENCY * vol_efficiency
-            - WEIGHT_HEIGHT * height_norm
+            WEIGHT_CONTACT * contact_ratio
             + WEIGHT_SUPPORT * support_ratio
+            + WEIGHT_FOOTPRINT * footprint_norm
+            - WEIGHT_HEIGHT * height_norm
+            - WEIGHT_HEIGHT_GROWTH * height_growth
+            - WEIGHT_TOWER * tower_penalty
             - WEIGHT_POSITION * position_penalty
         )

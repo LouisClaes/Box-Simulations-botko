@@ -1,0 +1,60 @@
+{
+  "created_at": "2026-02-25T22:14:15Z",
+  "host": "Laptop-Louis",
+  "mode": "train",
+  "profile": "quick",
+  "run_dir": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_231415",
+  "workflow_root": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python",
+  "strategies": [
+    "rl_hybrid_hh"
+  ],
+  "gpu_ids": [],
+  "jobs": {
+    "rl_hybrid_hh": {
+      "train": {
+        "command": [
+          "C:\\Users\\Louis\\anaconda3\\python.exe",
+          "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\strategies\\rl_hybrid_hh\\train.py",
+          "--mode",
+          "dqn",
+          "--episodes",
+          "200",
+          "--lr",
+          "0.001",
+          "--output-dir",
+          "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_231415\\rl_hybrid_hh"
+        ],
+        "log_path": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_231415\\logs\\train_rl_hybrid_hh.log",
+        "return_code": 0,
+        "duration_s": 0.0,
+        "gpu_id": null,
+        "started_at": "2026-02-25T22:18:02Z",
+        "finished_at": "2026-02-25T22:18:02Z",
+        "stage": "train",
+        "strategy": "rl_hybrid_hh"
+      }
+    }
+  },
+  "last_invocation": {
+    "timestamp": "2026-02-25T22:18:02Z",
+    "argv": [
+      "strategies/rl_common/hpc/run_rl_pipeline.py",
+      "--mode",
+      "train",
+      "--profile",
+      "quick",
+      "--dry_run",
+      "--output_root",
+      "outputs/rl_training_smoke",
+      "--strategies",
+      "rl_hybrid_hh"
+    ],
+    "mode": "train",
+    "run_dir": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_231415",
+    "strategies": [
+      "rl_hybrid_hh"
+    ]
+  },
+  "completed_at": "2026-02-25T22:18:02Z",
+  "status": "done"
+}

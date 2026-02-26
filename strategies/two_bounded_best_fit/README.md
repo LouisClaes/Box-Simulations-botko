@@ -1,72 +1,78 @@
 # Two-Bounded Best-Fit Strategy
 
 ## Overview
-A `MultiBinStrategy` that natively manages two bins simultaneously, selecting the best (bin, position, orientation) combination at each step using surface-contact scoring with a Best-Fit bin preference. Implements the dual-bin bin-routing principles from Zhao et al. (AAAI 2021) and Tsang et al. (2025).
+`two_bounded_best_fit` is a native `MultiBinStrategy` for dual-pallet Botko runs.
+At each decision it evaluates both active bins, finds each bin's best placement,
+then routes to the globally best `(bin, x, y, orientation)` combination.
 
-## Papers
-- Zhao, H., She, Q., Zhu, C., Yang, Y., & Xu, K. (2021). "Online 3D Bin Packing with Constrained Deep Reinforcement Learning." *AAAI Conference on Artificial Intelligence*, 35(6), 741–749. arXiv:2012.04412. https://github.com/alexfrom0815/Online-3D-BPP-DRL
-- Tsang, C.W., Tsang, E.C.C., & Wang, X. (2025). "A deep reinforcement learning approach for online and concurrent 3D bin packing optimisation with bin replacement strategies." *Computers in Industry*, Vol. 164, Article 104202.
+The strategy now uses:
+- 3-phase fallback search (strict -> relaxed margin -> relaxed support)
+- Lexicographic low-`z` preference inside each phase (DBLF-like layer bias)
+- Height-aware bin bonus taper to reduce low-efficiency tower routing
 
-## Algorithm
-For each incoming box:
-1. For each bin: find best (x, y, orientation) using composite surface-contact score.
-2. Apply Best-Fit bin preference: bonus proportional to current fill rate.
-3. Route box to the globally best (bin, position, orientation).
+## Current Scoring
+Per-bin candidate score:
 
-### Per-bin placement score
-```
-score = WEIGHT_SUPPORT × support_ratio
-       - WEIGHT_HEIGHT × height_norm
-       + WEIGHT_CONTACT × contact_base_ratio
-
-total = score + bin_fill_rate × FILL_BONUS_WEIGHT
-```
-
-### Key constants
-| Constant | Value | Role |
-|----------|-------|------|
-| `WEIGHT_SUPPORT` | 5.0 | Stability |
-| `WEIGHT_HEIGHT` | 2.0 | Vertical efficiency |
-| `WEIGHT_CONTACT` | 3.0 | Surface flatness |
-| `FILL_BONUS_WEIGHT` | 5.0 | Best-Fit bias (high: strongly prefers fuller bin) |
-| `MIN_SUPPORT` | 0.30 | Anti-float |
-
-### Difference from `tsang_multibin`
-- `two_bounded_best_fit`: higher FILL_BONUS (5.0 vs 2.0) → more aggressive best-fit behavior; scoring uses 3 components (support + height + contact)
-- `tsang_multibin`: lower FILL_BONUS (2.0); scoring uses contact + height + small support bonus
-
-## Performance (50 boxes, 1200×800×2700mm EUR pallet, 2 bins, buffer=5, seed=42)
-| Metric | Value |
-|--------|-------|
-| Aggregate fill rate | **38.3%** (across 2 bins) |
-| Boxes placed | 49/50 (98%) |
-| Bins used | 2 |
-| Computation time | ~77s total (1.57s/box) |
-
-## Class: `TwoBoundedBestFitStrategy(MultiBinStrategy)`
-- **Registry name:** `two_bounded_best_fit`
-- **Type:** Multi-bin (`MultiBinStrategy`) — requires `MultiBinPipeline`
-- **NOT compatible** with single-bin `run_experiment.py` or `MultiBinOrchestrator`
-
-## Integration
-```python
-from simulator.multi_bin_pipeline import MultiBinPipeline, PipelineConfig
-from simulator.buffer import BufferPolicy
-from config import BinConfig
-import strategies
-
-from strategies.base_strategy import MULTIBIN_STRATEGY_REGISTRY
-strategy = MULTIBIN_STRATEGY_REGISTRY["two_bounded_best_fit"]()
-
-config = PipelineConfig(
-    n_bins=2,
-    buffer_size=5,
-    buffer_policy=BufferPolicy.LARGEST_FIRST,
-    bin_config=BinConfig(length=1200, width=800, height=2700, resolution=10.0),
-)
-pipeline = MultiBinPipeline(strategy=strategy, config=config)
-result = pipeline.run(boxes)
+```text
+score =
+  + WEIGHT_SUPPORT * support_ratio
+  - WEIGHT_HEIGHT * height_norm
+  + WEIGHT_CONTACT * contact_base_ratio
+  - WEIGHT_HEIGHT_GROWTH * height_growth
+  - WEIGHT_POSITION * position_penalty
+  - phase_penalty
 ```
 
-## "2K-Bounded" interpretation
-The "two-bounded" name reflects the theoretical 2K-competitive ratio bound for online bin packing with 2 active bins (Zhao et al. 2021 and classical BPP theory): using 2 bins reduces the competitive ratio from ∞ (single bin, worst case) to a bounded factor K.
+where:
+- `height_norm = z / bin_height`
+- `height_growth = max(0, (z + oh - current_max_height) / bin_height)`
+- `position_penalty = (x + y) / (bin_length + bin_width)`
+- `phase_penalty` is `0` (phase 1), `4` (phase 2), `10` (phase 3)
+
+Global routing score:
+
+```text
+total_score = in_bin_score + fill_bonus
+fill_bonus = fill_rate * FILL_BONUS_WEIGHT * height_taper
+height_taper = max(0, 1 - max_height / (bin_height * FILL_BONUS_HEIGHT_RATIO))
+```
+
+## Constants
+| Constant | Value |
+|---|---:|
+| `MIN_SUPPORT` | `0.30` |
+| `WEIGHT_SUPPORT` | `14.0` |
+| `WEIGHT_HEIGHT` | `120.0` |
+| `WEIGHT_CONTACT` | `8.0` |
+| `WEIGHT_HEIGHT_GROWTH` | `40.0` |
+| `WEIGHT_POSITION` | `0.5` |
+| `WEIGHT_ROUGHNESS_DELTA` | `0.0` (disabled for speed) |
+| `FILL_BONUS_WEIGHT` | `1.5` |
+| `FILL_BONUS_HEIGHT_RATIO` | `0.67` |
+| `PHASE2_PENALTY` | `4.0` |
+| `PHASE3_PENALTY` | `10.0` |
+
+## Validation Snapshot (Botko Config)
+Config used:
+- 2 bins
+- 1200x800x2700 mm pallet
+- close at 1800 mm
+- buffer 8, pick window 4
+- max consecutive rejects 10
+- `allow_all_orientations = False`
+
+Measured run (`generate_rajapack(400, seed=42)`):
+- Placement rate: `97.75%`
+- Avg closed fill: `33.25%`
+- Avg closed effective fill: `47.51%`
+- Closed pallets: `11`
+- Rejected boxes: `0`
+- Runtime: `~170s`
+
+Status against PRD target for this strategy:
+- Placement target (`>85%`): met
+- Closed fill target (`>65%`): not yet met
+
+## Notes
+- The original reject-lockup failure mode is resolved (`0` rejects in Botko-scale runs).
+- Remaining gap is geometric efficiency: pallets still close with low volumetric density.

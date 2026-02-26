@@ -268,3 +268,31 @@ class PCTTransformerConfig:
         d['minibatch_size'] = self.minibatch_size
         d['resolved_device'] = self.resolved_device
         return d
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: dict,
+        base: Optional["PCTTransformerConfig"] = None,
+    ) -> "PCTTransformerConfig":
+        """Rehydrate config from a checkpoint-safe dictionary."""
+        config = base or cls()
+        if not isinstance(data, dict):
+            return config
+
+        ignored = {"grid_l", "grid_w", "batch_size", "minibatch_size", "resolved_device"}
+        for key, value in data.items():
+            if key.startswith("_") or key in ignored or not hasattr(config, key):
+                continue
+            if key == "reward_config" and isinstance(value, dict):
+                reward_cfg = RewardConfig()
+                for rk, rv in value.items():
+                    if hasattr(reward_cfg, rk):
+                        setattr(reward_cfg, rk, rv)
+                setattr(config, key, reward_cfg)
+                continue
+            try:
+                setattr(config, key, value)
+            except Exception:
+                pass
+        return config

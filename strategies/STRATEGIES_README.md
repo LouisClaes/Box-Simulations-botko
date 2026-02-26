@@ -8,6 +8,16 @@ the `--strategy <name>` CLI flag or the `ExperimentConfig.strategy_name` paramet
 
 **Focus:** Maximizing fill rate of a 2K-bound pallet setup (2 pallets available, 5-10 box buffer, semi-online).
 
+## RL Pipeline Note (2026-02-25)
+
+RL training/evaluation now uses a unified orchestrator:
+
+```bash
+bash strategies/rl_common/hpc/train_all.sh
+```
+
+This runs the full RL pipeline (train + evaluate + thesis visualizations) and prioritizes `rl_mcts_hybrid` first for production hardening.
+
 ---
 
 ## Strategy Catalogue
@@ -435,4 +445,3 @@ Key improvement areas:
 4. **Ensemble methods**: Combine top strategies with voting/scoring
 5. **TF→PyTorch port**: Port SIMPAC-2024-311 dual-bin DDQN to PyTorch
 6. **Benchmark testing**: Run against PCT pre-generated data and Mendeley instances
-

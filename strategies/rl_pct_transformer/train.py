@@ -789,6 +789,30 @@ def train(config: PCTTransformerConfig) -> str:
     global_step = 0
     t0 = time.time()
 
+    if config.checkpoint_path and os.path.exists(config.checkpoint_path):
+        print(f"[PCT-Transformer] Resuming from {config.checkpoint_path}")
+        checkpoint = torch.load(
+            config.checkpoint_path,
+            map_location=device,
+            weights_only=False,
+        )
+        if "model_state_dict" in checkpoint:
+            network.load_state_dict(checkpoint["model_state_dict"])
+        if "optimizer_state_dict" in checkpoint:
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        if "scheduler_state_dict" in checkpoint:
+            try:
+                scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+            except Exception:
+                pass
+        global_episode = int(checkpoint.get("episode", 0))
+        global_step = int(checkpoint.get("global_step", 0))
+        best_fill = float(checkpoint.get("best_fill", 0.0))
+        print(
+            f"[PCT-Transformer] Resume state: episode={global_episode}, "
+            f"global_step={global_step}, best_fill={best_fill:.4f}"
+        )
+
     print(f"[PCT-Transformer] Starting training...")
 
     while global_episode < config.total_episodes:
@@ -902,8 +926,10 @@ def train(config: PCTTransformerConfig) -> str:
                 torch.save({
                     'model_state_dict': network.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
+                    'scheduler_state_dict': scheduler.state_dict(),
                     'config': config.to_dict(),
                     'episode': global_episode,
+                    'global_step': global_step,
                     'best_fill': best_fill,
                 }, best_checkpoint_path)
                 print(f"  [SAVE] New best model: fill={best_fill:.4f}")
@@ -917,8 +943,10 @@ def train(config: PCTTransformerConfig) -> str:
             torch.save({
                 'model_state_dict': network.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
+                'scheduler_state_dict': scheduler.state_dict(),
                 'config': config.to_dict(),
                 'episode': global_episode,
+                'global_step': global_step,
                 'best_fill': best_fill,
             }, ckpt_path)
 
@@ -927,8 +955,10 @@ def train(config: PCTTransformerConfig) -> str:
     torch.save({
         'model_state_dict': network.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
+        'scheduler_state_dict': scheduler.state_dict(),
         'config': config.to_dict(),
         'episode': global_episode,
+        'global_step': global_step,
         'best_fill': best_fill,
     }, final_path)
 
@@ -1058,17 +1088,6 @@ def parse_args() -> PCTTransformerConfig:
 def main() -> None:
     """CLI entry point."""
     config = parse_args()
-
-    # Resume from checkpoint if specified
-    if config.checkpoint_path and os.path.exists(config.checkpoint_path):
-        print(f"[PCT-Transformer] Resuming from {config.checkpoint_path}")
-        device = torch.device(config.resolved_device)
-        checkpoint = torch.load(config.checkpoint_path, map_location=device)
-
-        # Merge saved config with CLI overrides for schedule-related params
-        saved_config = checkpoint.get('config', {})
-        print(f"  Previous best fill: {saved_config.get('best_fill', 'N/A')}")
-        print(f"  Previous episode:   {checkpoint.get('episode', 'N/A')}")
 
     train(config)
 

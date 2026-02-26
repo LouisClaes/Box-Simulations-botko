@@ -2,3 +2,17 @@
 
 [2026-02-25 17:48] Started: Setup
 [2026-02-25 17:48] Completed: Setup
+[2026-02-25 18:31] Started: Task 0 - Architecture Familiarity
+[2026-02-25 18:31] Discovered architecture rules: Strategies only return (x, y, orientation). The simulator computes z (gravity). If 8-10 boxes are rejected cumulatively or lookahead fails, the pallet automatically closes. 0.0% fill means logic is too restrictive causing immediate closure.
+[2026-02-25 18:31] Completed: Task 0 - Architecture Familiarity
+[2026-02-25 18:35] Started: Task 1 - 2-Bounded Best Fit - Deep Diagnostics
+[2026-02-25 18:39] Mathematical Flaw: The Best-Fit fill bonus aggressively funnels boxes to one bin. Once that bin's surface becomes irregular, rigid is_margin_clear and contact ratios reject candidates. Rejections accrue, hitting max_consecutive_rejects (10). The active pallets never hit 50% fill to close, so they are abandoned. The runner terminates early and calculating avg_closed_fill throws ZeroDivisionError (0 closed pallets).
+[2026-02-25 18:39] Completed: Task 1 - 2-Bounded Best Fit - Deep Diagnostics
+[2026-02-25 18:39] Started: Task 2 - 2-Bounded Best Fit - Implementation Marathon
+[2026-02-25 23:21] Sequential Trace Update: The strategy no longer reject-locks (0 rejects), but closes pallets at low volumetric density due vertical inefficiency. Root cause shifted from feasibility to quality ranking.
+[2026-02-25 23:21] Task 2 Patch Set: Added phase fallback scoring with strong height-growth penalties, fixed fallback orientation index handling by removing incorrect post-recompute path, introduced height-aware Best-Fit bonus taper, and changed candidate selection to lexicographic low-z priority inside each phase.
+[2026-02-25 23:21] Task 2 Validation Snapshot (Botko scale): n=300 => placement=100.0%, avg_closed_fill=32.85%, closed=8, rejected=0.
+[2026-02-25 23:21] Started: Task 3 - 2-Bounded Best Fit - Rigid Validation
+[2026-02-25 23:21] Task 3 Validation (Botko-scale check): n=400 => placement=97.75%, avg_closed_fill=33.25%, avg_closed_effective_fill=47.51%, closed=11, rejected=0, early_termination with 9 boxes remaining.
+[2026-02-25 23:21] Task 3 Status: Partial pass. Placement target (>85%) met, closed-fill target (>65%) not met. Further scoring/routing redesign still required.
+

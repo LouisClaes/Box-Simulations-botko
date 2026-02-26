@@ -57,6 +57,8 @@ import copy
 import json
 import time
 import math
+import random
+import signal
 from typing import Dict, List, Optional, Tuple, Any
 from collections import deque
 
@@ -89,6 +91,87 @@ from strategies.rl_mcts_hybrid.void_detector import compute_void_fraction
 from strategies.rl_mcts_hybrid.strategy import (
     _encode_observation, _build_hl_action_mask, _decode_hl_action,
 )
+
+
+# ---------------------------------------------------------------------------
+# Checkpoint helpers
+# ---------------------------------------------------------------------------
+
+def _resolve_resume_path(resume_arg: Optional[str], ckpt_dir: str) -> Optional[str]:
+    """
+    Resolve a resume path.
+
+    Accepted values:
+      - explicit file path
+      - "latest": checkpoint_dir/latest.pt
+      - "auto": prefer latest.pt, else newest step_*.pt, else final_model.pt
+    """
+    if not resume_arg:
+        return None
+
+    lowered = resume_arg.lower()
+    if lowered == "latest":
+        candidate = os.path.join(ckpt_dir, "latest.pt")
+        return candidate if os.path.isfile(candidate) else None
+
+    if lowered == "auto":
+        latest_path = os.path.join(ckpt_dir, "latest.pt")
+        if os.path.isfile(latest_path):
+            return latest_path
+
+        step_candidates = []
+        for name in os.listdir(ckpt_dir):
+            if name.startswith("step_") and name.endswith(".pt"):
+                path = os.path.join(ckpt_dir, name)
+                if os.path.isfile(path):
+                    step_candidates.append(path)
+        if step_candidates:
+            step_candidates.sort(key=os.path.getmtime, reverse=True)
+            return step_candidates[0]
+
+        final_path = os.path.join(ckpt_dir, "final_model.pt")
+        if os.path.isfile(final_path):
+            return final_path
+        return None
+
+    return resume_arg if os.path.isfile(resume_arg) else None
+
+
+def _atomic_torch_save(payload: Dict[str, Any], path: str) -> None:
+    """Write checkpoint atomically to reduce corruption risk on preemption."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp_path = f"{path}.tmp.{os.getpid()}"
+    torch.save(payload, tmp_path)
+    os.replace(tmp_path, path)
+
+
+def _snapshot_rng_state() -> Dict[str, Any]:
+    """Capture Python/NumPy/Torch RNG states for deterministic resume."""
+    state: Dict[str, Any] = {
+        "python": random.getstate(),
+        "numpy": np.random.get_state(),
+        "torch_cpu": torch.random.get_rng_state(),
+    }
+    if torch.cuda.is_available():
+        state["torch_cuda"] = torch.cuda.get_rng_state_all()
+    return state
+
+
+def _restore_rng_state(state: Dict[str, Any]) -> None:
+    """Restore RNG states from a checkpoint if present."""
+    if not state:
+        return
+    try:
+        if "python" in state:
+            random.setstate(state["python"])
+        if "numpy" in state:
+            np.random.set_state(state["numpy"])
+        if "torch_cpu" in state:
+            torch.random.set_rng_state(state["torch_cpu"])
+        if "torch_cuda" in state and torch.cuda.is_available():
+            torch.cuda.set_rng_state_all(state["torch_cuda"])
+    except Exception as exc:
+        print(f"[resume] Warning: failed to fully restore RNG state: {exc}")
 
 
 # ---------------------------------------------------------------------------
@@ -509,7 +592,6 @@ def ppo_update(
     hl_old_logp = torch.tensor(buffer.hl_log_probs, dtype=torch.float32, device=device)
     ll_actions_t = torch.tensor(buffer.ll_actions, dtype=torch.long, device=device)
     ll_old_logp = torch.tensor(buffer.ll_log_probs, dtype=torch.float32, device=device)
-    hl_embeds_t = torch.stack(buffer.hl_embeds).to(device)
 
     # HL masks
     hl_masks_t = torch.as_tensor(
@@ -564,7 +646,7 @@ def ppo_update(
             mb_hl_masks = hl_masks_t[mb]
             mb_cand_feats = cand_feats_t[mb]
             mb_cand_masks = cand_masks_t[mb]
-            mb_hl_embeds = hl_embeds_t[mb]
+            mb_hl_embeds = model.high_level.action_embedding(mb_hl_acts)
 
             # ---- High-level policy ----
             hl_out = model.high_level(
@@ -738,6 +820,9 @@ def collect_rollout(
         if not grippable:
             obs, info = env.reset()
             continue
+        if not bin_states:
+            obs, info = env.reset()
+            continue
 
         box = grippable[0]
 
@@ -754,7 +839,7 @@ def collect_rollout(
 
             # High-level mask
             hl_mask_np = _build_hl_action_mask(
-                len(grippable), config.num_bins, bin_states, config,
+                len(grippable), len(bin_states), bin_states, config,
             )
             hl_mask_t = torch.as_tensor(
                 hl_mask_np.reshape(1, -1), device=device,
@@ -764,16 +849,70 @@ def collect_rollout(
             hl_out = model.high_level(global_state, hl_mask_t)
 
         hl_action_idx = int(hl_out.action.item())
-        action_type, box_idx, bin_idx = _decode_hl_action(hl_action_idx, config)
+        action_type, box_idx, bin_idx = _decode_hl_action(
+            hl_action_idx,
+            config,
+            active_pick_window=len(grippable),
+            active_num_bins=len(bin_states),
+        )
 
-        # Default: use first box and first bin
-        if action_type != "place":
-            box_idx = 0
-            bin_idx = 0
+        if action_type in ("skip", "reconsider"):
+            env_action = env.env_config.total_actions - 1
+            obs, reward, terminated, truncated, info = env.step(env_action)
+            current_ep_reward += reward
 
-        if box_idx >= len(grippable):
+            max_cands = config.max_candidates
+            dummy_feats = np.zeros((1, max_cands, config.candidate_input_dim), dtype=np.float32)
+            dummy_mask = np.zeros((1, max_cands), dtype=bool)
+            dummy_mask[0, 0] = True
+
+            with torch.no_grad():
+                ll_out = model.low_level(
+                    global_state,
+                    hl_out.action_embed,
+                    torch.as_tensor(dummy_feats, device=device),
+                    torch.as_tensor(dummy_mask, device=device),
+                    action=torch.zeros(1, dtype=torch.long, device=device),
+                )
+
+            void_fracs = [0.0] * config.num_bins
+            try:
+                new_obs = env._obs
+                if new_obs is not None:
+                    for bi, bs_new in enumerate(new_obs.bin_states[:config.num_bins]):
+                        void_fracs[bi] = compute_void_fraction(bs_new)
+            except Exception:
+                pass
+
+            buffer.add(
+                global_state=global_state.squeeze(0),
+                hl_action=hl_action_idx,
+                hl_log_prob=hl_out.log_prob.item(),
+                hl_value=hl_out.value.item(),
+                hl_mask=hl_mask_np,
+                ll_action=0,
+                ll_log_prob=ll_out.log_prob.item(),
+                ll_value=ll_out.value.item(),
+                candidate_feats=dummy_feats[0],
+                candidate_mask=dummy_mask[0],
+                hl_embed=hl_out.action_embed.squeeze(0),
+                reward=reward,
+                done=terminated or truncated,
+                void_frac=void_fracs,
+            )
+
+            if terminated or truncated:
+                episode_rewards.append(current_ep_reward)
+                if 'final_avg_fill' in info:
+                    episode_fills.append(info['final_avg_fill'])
+                current_ep_reward = 0.0
+                episodes_completed += 1
+                obs, info = env.reset()
+            continue
+
+        if box_idx < 0 or box_idx >= len(grippable):
             box_idx = 0
-        if bin_idx >= len(bin_states):
+        if bin_idx < 0 or bin_idx >= len(bin_states):
             bin_idx = 0
 
         target_box = grippable[box_idx]
@@ -932,105 +1071,135 @@ def evaluate(
     fills = []
     rewards = []
 
-    for ep in range(num_episodes):
-        obs, info = env.reset(seed=seed + ep)
-        ep_reward = 0.0
+    try:
+        for ep in range(num_episodes):
+            obs, info = env.reset(seed=seed + ep)
+            ep_reward = 0.0
 
-        while True:
-            env_obs = env._obs
-            if env_obs is None or env_obs.done:
-                break
+            while True:
+                env_obs = env._obs
+                if env_obs is None or env_obs.done:
+                    break
 
-            grippable = env_obs.grippable
-            bin_states = env_obs.bin_states
+                grippable = env_obs.grippable
+                bin_states = env_obs.bin_states
 
-            if not grippable:
-                break
+                if not grippable:
+                    break
 
-            box = grippable[0]
+                box = grippable[0]
 
-            # Encode and run policy
-            obs_tensors = _encode_observation(box, list(bin_states), config, device)
+                # Encode and run policy
+                obs_tensors = _encode_observation(box, list(bin_states), config, device)
 
-            with torch.no_grad():
-                global_state, _ = model.encode(
-                    obs_tensors['heightmaps'],
-                    obs_tensors['box_features'],
-                    obs_tensors['buffer_features'],
-                    obs_tensors['buffer_mask'],
+                with torch.no_grad():
+                    global_state, _ = model.encode(
+                        obs_tensors['heightmaps'],
+                        obs_tensors['box_features'],
+                        obs_tensors['buffer_features'],
+                        obs_tensors['buffer_mask'],
+                    )
+
+                    hl_mask_np = _build_hl_action_mask(
+                        len(grippable), len(bin_states), list(bin_states), config,
+                    )
+                    hl_mask_t = torch.as_tensor(
+                        hl_mask_np.reshape(1, -1), device=device,
+                    )
+                    hl_out = model.high_level(
+                        global_state, hl_mask_t, deterministic=True,
+                    )
+
+                hl_action_idx = int(hl_out.action.item())
+                action_type, box_idx, bin_idx = _decode_hl_action(
+                    hl_action_idx,
+                    config,
+                    active_pick_window=len(grippable),
+                    active_num_bins=len(bin_states),
                 )
 
-                hl_mask_np = _build_hl_action_mask(
-                    len(grippable), config.num_bins, list(bin_states), config,
-                )
-                hl_mask_t = torch.as_tensor(
-                    hl_mask_np.reshape(1, -1), device=device,
-                )
-                hl_out = model.high_level(
-                    global_state, hl_mask_t, deterministic=True,
-                )
+                if action_type in ("skip", "reconsider"):
+                    env_action = env.env_config.total_actions - 1
+                    obs, reward, terminated, truncated, info = env.step(env_action)
+                    ep_reward += reward
+                    if terminated or truncated:
+                        break
+                    continue
 
-            # Generate candidates
-            candidates = candidate_gen.generate(box, [bin_states[0]])
+                if box_idx < 0 or box_idx >= len(grippable):
+                    box_idx = 0
+                if bin_idx < 0 or bin_idx >= len(bin_states):
+                    bin_idx = 0
 
-            if not candidates:
-                env_action = env.env_config.total_actions - 1
+                target_box = grippable[box_idx]
+                target_bs = bin_states[bin_idx]
+
+                # Generate candidates
+                candidates = candidate_gen.generate(target_box, [target_bs])
+
+                if not candidates:
+                    env_action = env.env_config.total_actions - 1
+                    obs, reward, terminated, truncated, info = env.step(env_action)
+                    ep_reward += reward
+                    if terminated or truncated:
+                        break
+                    continue
+
+                cand_feats = candidate_gen.get_feature_array(candidates)
+                n_cands = len(candidates)
+                max_cands = config.max_candidates
+
+                padded_feats = np.zeros(
+                    (1, max_cands, config.candidate_input_dim), dtype=np.float32,
+                )
+                padded_feats[0, :min(n_cands, max_cands)] = cand_feats[:max_cands]
+                cand_mask = np.zeros((1, max_cands), dtype=bool)
+                cand_mask[0, :min(n_cands, max_cands)] = True
+
+                with torch.no_grad():
+                    ll_out = model.low_level(
+                        global_state, hl_out.action_embed,
+                        torch.as_tensor(padded_feats, device=device),
+                        torch.as_tensor(cand_mask, device=device),
+                        deterministic=True,
+                    )
+
+                action_idx = int(ll_out.action.item())
+                if action_idx >= n_cands:
+                    action_idx = 0
+
+                selected = candidates[action_idx]
+
+                # Execute
+                try:
+                    gx = int(round(selected.x / env.env_config.action_grid_step))
+                    gy = int(round(selected.y / env.env_config.action_grid_step))
+                    gx = min(gx, env.env_config.action_grid_l - 1)
+                    gy = min(gy, env.env_config.action_grid_w - 1)
+                    env_action = env._encode_action(
+                        box_idx, bin_idx, gx, gy, selected.orient_idx,
+                    )
+                    if env_action >= env.env_config.total_actions:
+                        env_action = env.env_config.total_actions - 1
+                except Exception:
+                    env_action = env.env_config.total_actions - 1
+
                 obs, reward, terminated, truncated, info = env.step(env_action)
                 ep_reward += reward
+
                 if terminated or truncated:
                     break
-                continue
 
-            cand_feats = candidate_gen.get_feature_array(candidates)
-            n_cands = len(candidates)
-            max_cands = config.max_candidates
+            rewards.append(ep_reward)
+            if 'final_avg_fill' in info:
+                fills.append(info['final_avg_fill'])
+    finally:
+        try:
+            env.close()
+        except Exception:
+            pass
+        model.train()
 
-            padded_feats = np.zeros(
-                (1, max_cands, config.candidate_input_dim), dtype=np.float32,
-            )
-            padded_feats[0, :min(n_cands, max_cands)] = cand_feats[:max_cands]
-            cand_mask = np.zeros((1, max_cands), dtype=bool)
-            cand_mask[0, :min(n_cands, max_cands)] = True
-
-            with torch.no_grad():
-                ll_out = model.low_level(
-                    global_state, hl_out.action_embed,
-                    torch.as_tensor(padded_feats, device=device),
-                    torch.as_tensor(cand_mask, device=device),
-                    deterministic=True,
-                )
-
-            action_idx = int(ll_out.action.item())
-            if action_idx >= n_cands:
-                action_idx = 0
-
-            selected = candidates[action_idx]
-
-            # Execute
-            try:
-                gx = int(round(selected.x / env.env_config.action_grid_step))
-                gy = int(round(selected.y / env.env_config.action_grid_step))
-                gx = min(gx, env.env_config.action_grid_l - 1)
-                gy = min(gy, env.env_config.action_grid_w - 1)
-                env_action = env._encode_action(
-                    0, 0, gx, gy, selected.orient_idx,
-                )
-                if env_action >= env.env_config.total_actions:
-                    env_action = env.env_config.total_actions - 1
-            except Exception:
-                env_action = env.env_config.total_actions - 1
-
-            obs, reward, terminated, truncated, info = env.step(env_action)
-            ep_reward += reward
-
-            if terminated or truncated:
-                break
-
-        rewards.append(ep_reward)
-        if 'final_avg_fill' in info:
-            fills.append(info['final_avg_fill'])
-
-    model.train()
     return {
         'mean_fill': float(np.mean(fills)) if fills else 0.0,
         'mean_reward': float(np.mean(rewards)) if rewards else 0.0,
@@ -1053,6 +1222,19 @@ def train(args: argparse.Namespace) -> None:
         config.num_envs = args.num_envs
     if args.lr:
         config.lr = args.lr
+    if config.num_envs != 1:
+        print(
+            f"[warning] rl_mcts_hybrid currently uses a single environment per process. "
+            f"Ignoring num_envs={config.num_envs} and running with num_envs=1."
+        )
+        config.num_envs = 1
+
+    # Deterministic seeds for reproducible HPC reruns
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
 
     # Device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -1075,19 +1257,39 @@ def train(args: argparse.Namespace) -> None:
     model = MCTSHybridNet(config).to(device)
     print(model.summary())
 
-    # Resume if checkpoint exists
-    start_step = 0
-    best_fill = 0.0
-    if args.resume and os.path.exists(args.resume):
-        print(f"Resuming from {args.resume}")
-        checkpoint = torch.load(args.resume, map_location=device, weights_only=False)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        start_step = checkpoint.get('total_steps', 0)
-        best_fill = checkpoint.get('best_fill', 0.0)
-        print(f"  Resumed at step {start_step}, best_fill={best_fill:.1%}")
-
     # Optimizer
     optimizer = optim.Adam(model.parameters(), lr=config.lr, eps=1e-5)
+
+    # Training state
+    start_step = 0
+    best_fill = 0.0
+    update_count = 0
+    current_stage = 0
+    recent_fills = deque(maxlen=50)
+    stop_requested = {"value": False, "signal": "unknown"}
+
+    # Resume if checkpoint exists
+    resume_path = _resolve_resume_path(args.resume, ckpt_dir)
+    if args.resume and resume_path is None:
+        print(f"[resume] Requested resume source not found: {args.resume}")
+        print("         Starting fresh run.")
+    elif resume_path:
+        print(f"Resuming from {resume_path}")
+        checkpoint = torch.load(resume_path, map_location=device, weights_only=False)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        if "optimizer_state_dict" in checkpoint:
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        start_step = int(checkpoint.get("total_steps", 0))
+        best_fill = float(checkpoint.get("best_fill", 0.0))
+        update_count = int(checkpoint.get("update_count", 0))
+        current_stage = int(checkpoint.get("current_stage", 0))
+        recent_fill_values = checkpoint.get("recent_fills", [])
+        recent_fills = deque(recent_fill_values, maxlen=50)
+        _restore_rng_state(checkpoint.get("rng_state", {}))
+        print(
+            f"  Resumed at step {start_step}, update {update_count}, "
+            f"stage {current_stage}, best_fill={best_fill:.1%}"
+        )
 
     # Save config
     config_path = os.path.join(log_dir, "config.json")
@@ -1131,12 +1333,12 @@ def train(args: argparse.Namespace) -> None:
     )
 
     # Compute curriculum stage boundaries
-    steps_per_stage = config.total_timesteps // max(config.curriculum_stages, 1)
-    current_stage = 0
+    num_stages = max(config.curriculum_stages, 1)
+    steps_per_stage = max(1, config.total_timesteps // num_stages)
+    current_stage = max(0, min(current_stage, num_stages - 1))
+    current_stage = max(current_stage, min(start_step // steps_per_stage, num_stages - 1))
 
     total_steps = start_step
-    update_count = 0
-    recent_fills = deque(maxlen=50)
 
     # Create environment
     curr_cfg = get_curriculum_config(current_stage, config)
@@ -1159,129 +1361,186 @@ def train(args: argparse.Namespace) -> None:
 
     print(f"  Starting at curriculum stage {current_stage}")
 
-    eval_interval = 5000
-    checkpoint_interval = 10000
-    log_interval = 1000
+    eval_interval = max(args.eval_interval, config.rollout_steps)
+    checkpoint_interval = max(args.checkpoint_interval, config.rollout_steps)
+    log_interval = max(args.log_interval, 1)
 
-    while total_steps < config.total_timesteps:
-        # Check curriculum advancement
-        new_stage = min(
-            total_steps // steps_per_stage,
-            config.curriculum_stages - 1,
-        )
-        if new_stage > current_stage:
-            current_stage = new_stage
-            curr_cfg = get_curriculum_config(current_stage, config)
-            env_config = EnvConfig(
-                bin_config=bin_config,
-                num_bins=curr_cfg['num_bins'],
-                buffer_size=curr_cfg['buffer_size'],
-                pick_window=curr_cfg['pick_window'],
-                close_height=config.close_height,
-                num_orientations=config.num_orientations,
-                num_boxes_per_episode=curr_cfg['num_boxes'],
-                box_size_range=curr_cfg['size_range'],
-                seed=args.seed + current_stage * 1000,
-            )
-            env = BinPackingEnv(config=env_config)
-            print(f"\n  Advancing to curriculum stage {current_stage}: "
-                  f"{curr_cfg['num_boxes']} boxes, {curr_cfg['num_bins']} bins, "
-                  f"pick_window={curr_cfg['pick_window']}")
+    def build_checkpoint_payload(reason: str, eval_stats: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {
+            "reason": reason,
+            "saved_at": time.time(),
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "config": config.to_dict(),
+            "total_steps": total_steps,
+            "best_fill": best_fill,
+            "update_count": update_count,
+            "current_stage": current_stage,
+            "recent_fills": list(recent_fills),
+            "rng_state": _snapshot_rng_state(),
+        }
+        if eval_stats is not None:
+            payload["eval_stats"] = eval_stats
+        return payload
 
-        # Collect rollout
-        model.train()
-        rollout_stats = collect_rollout(
-            model, env, candidate_gen, rollout_buffer,
-            config, device, config.rollout_steps,
-        )
-        total_steps += rollout_buffer.size
+    def save_training_checkpoint(name: str, payload: Dict[str, Any]) -> str:
+        path = os.path.join(ckpt_dir, name)
+        _atomic_torch_save(payload, path)
+        latest_path = os.path.join(ckpt_dir, "latest.pt")
+        _atomic_torch_save(payload, latest_path)
+        return path
 
-        # PPO update
-        imitation_weight = max(
-            0.0,
-            config.imitation_weight * (1.0 - total_steps / config.total_timesteps),
-        )
-        loss_stats = ppo_update(
-            model, optimizer, rollout_buffer, config, device, imitation_weight,
-        )
+    def _signal_handler(signum: int, _frame: Any) -> None:
+        signame = signal.Signals(signum).name
+        print(f"\n[signal] Received {signame}. Graceful shutdown after current iteration.")
+        stop_requested["value"] = True
+        stop_requested["signal"] = signame
 
-        update_count += 1
+    for signum in (signal.SIGTERM, signal.SIGINT):
+        try:
+            signal.signal(signum, _signal_handler)
+        except Exception:
+            pass
 
-        if rollout_stats['mean_fill'] > 0:
-            recent_fills.append(rollout_stats['mean_fill'])
-
-        # Logging
-        if total_steps % log_interval < config.rollout_steps:
-            avg_fill = float(np.mean(recent_fills)) if recent_fills else 0.0
-            print(
-                f"  Step {total_steps:>8d}/{config.total_timesteps} | "
-                f"Stage {current_stage} | "
-                f"Fill {avg_fill:.1%} | "
-                f"Reward {rollout_stats['mean_reward']:.2f} | "
-                f"Eps {rollout_stats['episodes']}"
-            )
-
-            logger.log_episode(
-                update_count,
-                reward=rollout_stats['mean_reward'],
-                fill=rollout_stats.get('mean_fill', 0.0),
-                total_steps=total_steps,
-                stage=current_stage,
-                **loss_stats,
-            )
-
-        # Evaluation
-        if total_steps % eval_interval < config.rollout_steps:
-            eval_stats = evaluate(
-                model, config, device, num_episodes=5, seed=9999,
-            )
-            print(
-                f"  [EVAL] Fill={eval_stats['mean_fill']:.1%} | "
-                f"Reward={eval_stats['mean_reward']:.2f}"
-            )
-
-            if eval_stats['mean_fill'] > best_fill:
-                best_fill = eval_stats['mean_fill']
-                save_path = os.path.join(ckpt_dir, "best_model.pt")
-                torch.save({
-                    'model_state_dict': model.state_dict(),
-                    'config': config.to_dict(),
-                    'total_steps': total_steps,
-                    'best_fill': best_fill,
-                    'eval_stats': eval_stats,
-                }, save_path)
-                print(f"  New best model saved! Fill={best_fill:.1%}")
-
-        # Periodic checkpointing
-        if total_steps % checkpoint_interval < config.rollout_steps:
-            save_path = os.path.join(ckpt_dir, f"step_{total_steps}.pt")
-            torch.save({
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'config': config.to_dict(),
-                'total_steps': total_steps,
-                'best_fill': best_fill,
-            }, save_path)
-
-    # Final save
-    final_path = os.path.join(ckpt_dir, "final_model.pt")
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'config': config.to_dict(),
-        'total_steps': total_steps,
-        'best_fill': best_fill,
-    }, final_path)
-    print(f"\nTraining complete. Final model: {final_path}")
-    print(f"Best fill rate: {best_fill:.1%}")
-
-    # Generate training curves
+    interrupted = False
+    last_error: Optional[Exception] = None
     try:
-        logger.plot_training_curves()
-        print("Training curves saved to", os.path.join(log_dir, "plots"))
-    except Exception as e:
-        print(f"Could not generate plots: {e}")
+        while total_steps < config.total_timesteps and not stop_requested["value"]:
+            # Check curriculum advancement
+            new_stage = min(
+                total_steps // steps_per_stage,
+                num_stages - 1,
+            )
+            if new_stage > current_stage:
+                current_stage = new_stage
+                curr_cfg = get_curriculum_config(current_stage, config)
+                try:
+                    env.close()
+                except Exception:
+                    pass
+                env_config = EnvConfig(
+                    bin_config=bin_config,
+                    num_bins=curr_cfg["num_bins"],
+                    buffer_size=curr_cfg["buffer_size"],
+                    pick_window=curr_cfg["pick_window"],
+                    close_height=config.close_height,
+                    num_orientations=config.num_orientations,
+                    num_boxes_per_episode=curr_cfg["num_boxes"],
+                    box_size_range=curr_cfg["size_range"],
+                    seed=args.seed + current_stage * 1000,
+                )
+                env = BinPackingEnv(config=env_config)
+                print(
+                    f"\n  Advancing to curriculum stage {current_stage}: "
+                    f"{curr_cfg['num_boxes']} boxes, {curr_cfg['num_bins']} bins, "
+                    f"pick_window={curr_cfg['pick_window']}"
+                )
 
-    logger.close()
+            # Collect rollout
+            model.train()
+            rollout_stats = collect_rollout(
+                model, env, candidate_gen, rollout_buffer,
+                config, device, config.rollout_steps,
+            )
+            total_steps += rollout_buffer.size
+
+            # PPO update
+            imitation_weight = max(
+                0.0,
+                config.imitation_weight * (1.0 - total_steps / config.total_timesteps),
+            )
+            loss_stats = ppo_update(
+                model, optimizer, rollout_buffer, config, device, imitation_weight,
+            )
+
+            update_count += 1
+
+            if rollout_stats["mean_fill"] > 0:
+                recent_fills.append(rollout_stats["mean_fill"])
+
+            # Logging
+            if total_steps % log_interval < config.rollout_steps:
+                avg_fill = float(np.mean(recent_fills)) if recent_fills else 0.0
+                print(
+                    f"  Step {total_steps:>8d}/{config.total_timesteps} | "
+                    f"Stage {current_stage} | "
+                    f"Fill {avg_fill:.1%} | "
+                    f"Reward {rollout_stats['mean_reward']:.2f} | "
+                    f"Eps {rollout_stats['episodes']}"
+                )
+
+                logger.log_episode(
+                    update_count,
+                    reward=rollout_stats["mean_reward"],
+                    fill=rollout_stats.get("mean_fill", 0.0),
+                    total_steps=total_steps,
+                    stage=current_stage,
+                    **loss_stats,
+                )
+
+            # Evaluation
+            if total_steps % eval_interval < config.rollout_steps:
+                eval_stats = evaluate(
+                    model, config, device, num_episodes=5, seed=9999,
+                )
+                print(
+                    f"  [EVAL] Fill={eval_stats['mean_fill']:.1%} | "
+                    f"Reward={eval_stats['mean_reward']:.2f}"
+                )
+
+                if eval_stats["mean_fill"] > best_fill:
+                    best_fill = eval_stats["mean_fill"]
+                    best_payload = build_checkpoint_payload("best_model", eval_stats)
+                    save_path = save_training_checkpoint("best_model.pt", best_payload)
+                    print(f"  New best model saved: {save_path} | Fill={best_fill:.1%}")
+
+            # Periodic checkpointing
+            if total_steps % checkpoint_interval < config.rollout_steps:
+                step_payload = build_checkpoint_payload("periodic")
+                save_path = save_training_checkpoint(
+                    f"step_{total_steps}.pt", step_payload,
+                )
+                print(f"  Checkpoint saved: {save_path}")
+
+        interrupted = stop_requested["value"]
+    except Exception as exc:
+        interrupted = True
+        last_error = exc
+        print(f"\n[error] Training loop failed: {exc}")
+        error_payload = build_checkpoint_payload("error")
+        error_path = save_training_checkpoint(f"error_step_{total_steps}.pt", error_payload)
+        print(f"  Emergency checkpoint saved: {error_path}")
+    finally:
+        try:
+            env.close()
+        except Exception:
+            pass
+        if interrupted:
+            reason = stop_requested["signal"] if stop_requested["value"] else "exception"
+            interrupted_payload = build_checkpoint_payload(f"interrupted_{reason}")
+            interrupted_path = save_training_checkpoint(
+                f"interrupted_step_{total_steps}.pt",
+                interrupted_payload,
+            )
+            print(f"\nTraining interrupted ({reason}).")
+            print(f"Latest checkpoint: {interrupted_path}")
+        else:
+            final_payload = build_checkpoint_payload("final")
+            final_path = save_training_checkpoint("final_model.pt", final_payload)
+            print(f"\nTraining complete. Final model: {final_path}")
+            print(f"Best fill rate: {best_fill:.1%}")
+
+        # Generate training curves
+        try:
+            logger.plot_training_curves()
+            print("Training curves saved to", os.path.join(log_dir, "plots"))
+        except Exception as exc:
+            print(f"Could not generate plots: {exc}")
+        finally:
+            logger.close()
+
+    if last_error is not None:
+        raise last_error
 
 
 # ---------------------------------------------------------------------------
@@ -1310,7 +1569,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--resume", type=str, default=None,
-        help="Path to checkpoint to resume from",
+        help="Checkpoint path or one of: latest, auto",
     )
     parser.add_argument(
         "--skip_imitation", action="store_true",
@@ -1324,6 +1583,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--seed", type=int, default=42,
         help="Random seed for reproducibility",
+    )
+    parser.add_argument(
+        "--log_interval", type=int, default=1000,
+        help="Console/logging interval in environment steps",
+    )
+    parser.add_argument(
+        "--eval_interval", type=int, default=5000,
+        help="Evaluation interval in environment steps",
+    )
+    parser.add_argument(
+        "--checkpoint_interval", type=int, default=10000,
+        help="Checkpoint interval in environment steps",
     )
     return parser.parse_args()
 

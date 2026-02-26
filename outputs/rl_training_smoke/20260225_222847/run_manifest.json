@@ -1,0 +1,59 @@
+{
+  "created_at": "2026-02-25T21:28:47Z",
+  "host": "Laptop-Louis",
+  "mode": "full",
+  "profile": "quick",
+  "run_dir": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_222847",
+  "workflow_root": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python",
+  "strategies": [
+    "rl_mcts_hybrid",
+    "rl_dqn"
+  ],
+  "gpu_ids": [],
+  "jobs": {
+    "all": {
+      "compare": {
+        "command": [
+          "C:\\Users\\Louis\\anaconda3\\python.exe",
+          "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\strategies\\rl_common\\compare_strategies.py",
+          "--eval_dir",
+          "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_222847\\evaluation",
+          "--output_dir",
+          "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_222847\\evaluation\\comparison",
+          "--strict"
+        ],
+        "log_path": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_222847\\logs\\compare_strategies.log",
+        "return_code": 0,
+        "duration_s": 0.0,
+        "gpu_id": null,
+        "started_at": "2026-02-25T21:29:14Z",
+        "finished_at": "2026-02-25T21:29:14Z",
+        "stage": "compare",
+        "strategy": "all"
+      }
+    }
+  },
+  "last_invocation": {
+    "timestamp": "2026-02-25T21:29:14Z",
+    "argv": [
+      "strategies/rl_common/hpc/run_rl_pipeline.py",
+      "--mode",
+      "visualize",
+      "--dry_run",
+      "--output_root",
+      "outputs/rl_training_smoke"
+    ],
+    "mode": "visualize",
+    "run_dir": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_222847",
+    "strategies": [
+      "rl_mcts_hybrid",
+      "rl_dqn",
+      "rl_ppo",
+      "rl_a2c_masked",
+      "rl_pct_transformer",
+      "rl_hybrid_hh"
+    ]
+  },
+  "completed_at": "2026-02-25T21:29:14Z",
+  "status": "done"
+}

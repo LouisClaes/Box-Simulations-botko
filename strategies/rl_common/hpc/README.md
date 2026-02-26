@@ -1,96 +1,86 @@
-# HPC Training Guide
+# HPC RL Pipeline Guide
 
-## Quick Start
+## What changed
 
-### 1. Transfer to HPC
+As of February 25, 2026, `rl_common/hpc` uses a single orchestrator script:
 
-```bash
-# From your local machine, copy the strategies folder to HPC
-scp -r "python/full workflow/" user@hpc:/path/to/project/
-```
+- `run_rl_pipeline.py`
 
-### 2. Setup Environment (one-time)
+This replaces fragile per-strategy shell argument wiring and enforces:
 
-```bash
-bash strategies/rl_common/hpc/setup_hpc.sh
-```
+- per-strategy CLI adapters (no wrong flags)
+- `rl_mcts_hybrid` priority (runs first)
+- strict fail-closed evaluation (no dummy/fake comparison plots)
+- normalized `eval_results.json` for all strategies
+- thesis-ready comparison figures in one run directory
 
-This creates a virtual environment at `~/venvs/rl_packing` with all dependencies.
-
-### 3. Train All Strategies
+## One-command run
 
 ```bash
-# Submit all 5 strategies as parallel SLURM jobs
-sbatch strategies/rl_common/hpc/train_all.sh
-
-# Or run locally (sequential)
-bash strategies/rl_common/hpc/train_all.sh --local
+bash strategies/rl_common/hpc/train_all.sh
 ```
 
-### 4. Monitor Training
+This defaults to `--mode full` and runs:
 
-```bash
-# Check SLURM queue
-squeue -u $USER
+1. train all selected strategies
+2. evaluate all selected strategies
+3. generate comparison + thesis visualization artifacts
 
-# Watch logs
-tail -f outputs/rl_training/*/logs/*.log
-
-# TensorBoard (if port forwarded)
-tensorboard --logdir outputs/rl_training/*/*/logs/tensorboard/
-```
-
-### 5. Evaluate
+## Evaluate an existing run
 
 ```bash
 bash strategies/rl_common/hpc/evaluate_all.sh outputs/rl_training/<timestamp>
 ```
 
-## Resource Requirements
-
-| Strategy | GPUs | CPUs | Memory | Time | Notes |
-|----------|------|------|--------|------|-------|
-| rl_dqn | 1 | 8 | 32GB | ~12h | Replay buffer memory-heavy |
-| rl_ppo | 1 | 16 | 48GB | ~16h | 16 parallel envs |
-| rl_a2c_masked | 1 | 16 | 48GB | ~16h | Mask computation overhead |
-| rl_hybrid_hh | 0 | 8 | 16GB | ~4h | CPU-only (small network) |
-| rl_pct_transformer | 1 | 16 | 48GB | ~16h | Transformer attention |
-
-**Total**: 4 GPUs, ~48h wall time (all parallel), ~160GB combined memory
-
-## Training Individual Strategies
+## Direct orchestrator usage
 
 ```bash
-cd "python/full workflow"
-
-# DDQN
-python strategies/rl_dqn/train.py --episodes 50000 --batch_size 256
-
-# PPO
-python strategies/rl_ppo/train.py --total_timesteps 5000000 --num_envs 16
-
-# A2C with masking
-python strategies/rl_a2c_masked/train.py --num_updates 200000 --num_envs 16
-
-# Hybrid Hyper-Heuristic (fast!)
-python strategies/rl_hybrid_hh/train.py --mode dqn --episodes 50000
-
-# PCT Transformer
-python strategies/rl_pct_transformer/train.py --episodes 200000 --num_envs 16
+python strategies/rl_common/hpc/run_rl_pipeline.py --mode full
+python strategies/rl_common/hpc/run_rl_pipeline.py --mode train --profile quick
+python strategies/rl_common/hpc/run_rl_pipeline.py --mode evaluate --run_dir outputs/rl_training/<timestamp>
+python strategies/rl_common/hpc/run_rl_pipeline.py --mode visualize --run_dir outputs/rl_training/<timestamp>
 ```
 
-## SLURM Customisation
+## Important flags
 
-Edit `train_all.sh` to match your HPC:
-- `#SBATCH --partition=gpu` → your GPU partition name
-- `module load Python/3.10.8-GCCcore-12.2.0` → your Python module
-- `module load CUDA/12.1.1` → your CUDA module
+```bash
+--strategies rl_mcts_hybrid,rl_dqn,rl_ppo,rl_a2c_masked,rl_pct_transformer,rl_hybrid_hh
+--gpus 0,1,2,3          # or auto
+--max_parallel 4
+--eval_episodes 100
+--continue_on_error
+--dry_run
+```
 
-## Troubleshooting
+## Output structure
 
-| Issue | Solution |
-|-------|----------|
-| `ModuleNotFoundError` | Set `PYTHONPATH` to workflow root |
-| Out of GPU memory | Reduce `--batch_size` or `--num_envs` |
-| SLURM timeout | Increase `--time` or reduce `--episodes` |
-| No GPU detected | Check `module load CUDA` and `nvidia-smi` |
+```text
+outputs/rl_training/<timestamp>/
+  run_manifest.json
+  logs/
+    train_<strategy>.log
+    eval_<strategy>.log
+    compare_strategies.log
+  <strategy>/
+    ... training artifacts ...
+  evaluation/
+    <strategy>/
+      eval_results.json
+      ... raw evaluator outputs ...
+    comparison/
+      fill_rate_comparison.png/.pdf
+      fill_distribution_grid.png/.pdf
+      training_fill_grid.png/.pdf
+      summary_table.csv
+```
+
+## SLURM notes
+
+`train_all.sh` includes default `#SBATCH` lines (`gpu:4`, `24:00:00`, `--requeue`).
+Adjust these for your cluster before production.
+
+## Reproducibility + stability checks
+
+- `run_manifest.json` stores command history and per-strategy status.
+- `rl_mcts_hybrid/train.py` now supports robust resume (`--resume auto`), atomic checkpoints, latest checkpoint aliasing, and signal-safe interruption checkpoints.
+- comparison generation fails if evaluation results are missing.

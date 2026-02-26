@@ -956,9 +956,10 @@ def train(config: PPOConfig) -> str:
         pass
 
     print(f"[PPO] Logs saved to: {log_dir}")
-    print(f"[PPO] Best checkpoint: {best_ckpt_path}")
+    resolved_best = best_ckpt_path or final_path
+    print(f"[PPO] Best checkpoint: {resolved_best}")
 
-    return best_ckpt_path
+    return resolved_best
 
 
 def _save_checkpoint(

@@ -1,75 +1,169 @@
 # LBCP Stability Strategy
 
-## Overview
-Implements the Load-Bearable Convex Polygon (LBCP) stability validation framework from Gao et al. (2025, JAIST). Unlike simple support-ratio checks, LBCP traces force transmission all the way to the bin floor through the full support stack, identifying truly load-bearing regions.
+## What Changed
+This version applies three PRD-style fixes:
 
-## Paper
-Gao, Y., Wang, B., Kong, W., Chong, A. (2025). "Online 3D Bin Packing with Fast Stability Validation and Stable Rearrangement Planning." *arXiv:2507.09123*. JAIST. https://arxiv.org/abs/2507.09123
+1. Bracing-aware stability relaxation (bounded): if CoG is slightly outside the support polygon, limited relaxation is allowed only when support and lateral bracing are strong enough.
+2. Improved support-contact detection: support is computed from overlap area between footprint cells and support patches, not only cell-center inclusion.
+3. Diagnostics-friendly behavior: each decision records rejection/accept counters and brace-relaxation usage via `get_last_diagnostics()`.
 
-## Core Concept — LBCP
-A box's LBCP is the region on its top face from which it can structurally support downward load. Key theorems:
-1. Floor items: LBCP = full top face
-2. Stacked items: LBCP = convex hull of (top_face ∩ LBCP of supporting items)
-3. Item is stable iff its centre-of-gravity lies inside the LBCP (support polygon)
-4. Placing a stable item cannot destabilise items below it → incremental re-checking not needed
+## Core Validation Logic
 
-## Algorithm (SSV — Stability Sequence Validation)
-For each candidate (x, y, orientation):
-1. `z = get_height_at(x, y, ol, ow)` — resting height
-2. If `z < 0.5`: floor placement, support_ratio = 1.0
-3. Find support items: placed boxes with `z_max ≈ z` and overlapping footprint
-4. For each support item: compute LBCP rectangle (floor items: full top face; stacked: shrunk by 15% per edge)
-5. Collect contact cells where heightmap = z AND cell falls inside a supporting LBCP
-6. Build support polygon = convex hull of valid contact cell centres
-7. Stable iff CoG (centre of box footprint) is inside the support polygon
-8. `support_ratio` = valid cells / total footprint cells
+### 1) Support patch construction
+For each support item `p`:
 
-### Composite score
 ```
-score = 10.0 × support_ratio
-       +  5.0 × contact_ratio
-       -  2.0 × height_norm
-       -  1.0 × roughness_delta
+patch_p = candidate_footprint intersect top_face(p) intersect lbcp(p)
 ```
 
-### Key constants
-| Constant | Value | Role |
-|----------|-------|------|
-| `WEIGHT_STABILITY` | 10.0 | Primary: stable LBCP contact |
-| `WEIGHT_CONTACT` | 5.0 | Secondary: contact breadth |
-| `WEIGHT_HEIGHT` | 2.0 | Prefer low placements |
-| `WEIGHT_ROUGHNESS` | 1.0 | Smooth surface preferred |
-| `LBCP_SHRINK_STACKED` | 0.15 | 15% per-edge LBCP shrink for non-floor items |
-| `MIN_SUPPORT` | 0.30 | Anti-float hard threshold |
+where `lbcp(p)` is:
 
-## Performance (50 boxes, 1200×800×2700mm EUR pallet, seed=42)
-| Metric | Value |
-|--------|-------|
-| Fill rate | **45.7%** |
-| Boxes placed | 32/50 (64%) |
-| Computation time | 241.4s total (4.83s/box) |
+- full top face for floor items (`z < 0.5`)
+- inward-shrunk rectangle (`LBCP_SHRINK_STACKED`) for stacked items
 
-**Performance note:** Scan step = `2 × resolution` (10mm → 20mm). Full 1× scan would be ~4× slower. The LBCP convex hull computation per candidate makes this the most computationally expensive strategy, justified by superior stability guarantees.
+### 2) Improved support ratio (area-based)
+For each candidate footprint cell:
 
-## Class: `LBCPStabilityStrategy(BaseStrategy)`
-- **Registry name:** `lbcp_stability`
-- **Type:** Single-bin (`BaseStrategy`)
+1. Height must match resting `z` within `CONTACT_TOL`.
+2. Cell rectangle must overlap a support patch by at least:
 
-## Stability
-- Full LBCP validation: force-transmitting support chains to floor
-- `MIN_SUPPORT = 0.30` enforced as minimum; LBCP adds stronger geometric constraint
-- Respects `enable_stability` for strict `min_support_ratio`
-
-## Integration
-```python
-python run_experiment.py --strategy lbcp_stability --generate 50
+```
+MIN_CELL_CONTACT_FRACTION * cell_area
 ```
 
-## Advantages over simpler stability
-| Method | What it checks |
-|--------|----------------|
-| Simple support ratio | ≥30% of footprint is covered |
-| Stacking tree (Zhao 2021) | CoG inside support polygon (direct contacts only) |
-| **LBCP (Gao 2025)** | CoG inside load-bearing polygon (force chain to floor) |
+Support ratio:
 
-LBCP is the most physically accurate and the only method that correctly handles multi-layer support chains.
+```
+support_ratio = total_contact_area / total_footprint_area
+```
+
+### 3) Strict LBCP test
+Build support polygon as convex hull of contact cell centers.
+Strictly stable if CoG is inside polygon.
+
+## Bracing-Aware Relaxation (Bounded)
+If CoG is outside support polygon, compute:
+
+```
+brace_factor in [0, 1]
+```
+
+from four side channels (`left/right/front/back`) using:
+
+- wall brace (near wall)
+- neighbor side-contact with sufficient vertical overlap
+
+Allowance is bounded:
+
+```
+geometric_cap = min(min(ol, ow) * BRACE_RELAX_MAX_FRACTION,
+                    resolution * BRACE_RELAX_MAX_CELLS)
+
+support_scale = (support_ratio - BRACE_RELAX_MIN_SUPPORT) / (1 - BRACE_RELAX_MIN_SUPPORT)
+support_scale clipped to [0, 1]
+
+allowance = geometric_cap * brace_factor * support_scale
+```
+
+Relaxed stability is accepted only if all are true:
+
+1. `support_ratio >= BRACE_RELAX_MIN_SUPPORT`
+2. `brace_factor >= BRACE_RELAX_MIN_BRACE`
+3. `outside_distance(CoG, support_polygon) <= allowance`
+
+This makes relaxation explicitly bounded and impossible when support/bracing is weak.
+
+## Scoring Formula
+
+```
+score =
+    WEIGHT_STABILITY * support_ratio
+    + WEIGHT_CONTACT * contact_ratio
+    - WEIGHT_HEIGHT * height_norm
+    - WEIGHT_ROUGHNESS_DELTA * roughness_delta
+```
+
+with:
+
+```
+height_norm = z / bin_height
+```
+
+## Diagnostics
+`get_last_diagnostics()` returns counters from the latest `decide_placement()` call, including:
+
+- `candidates_generated`
+- `orientation_checks`
+- `rejected_bounds`
+- `rejected_height`
+- `rejected_min_support`
+- `rejected_cfg_support`
+- `rejected_stability`
+- `rejected_margin`
+- `accepted_candidates`
+- `brace_relaxed_accepts`
+- `best_found`
+- `best_score`
+
+When `config.verbose=True`, a one-line summary is printed per decision call.
+
+## Constants
+
+- `MIN_SUPPORT = 0.30`
+- `CONTACT_TOL = 0.5`
+- `MIN_CELL_CONTACT_FRACTION = 0.05`
+- `LBCP_SHRINK_STACKED = 0.15`
+- `BRACE_RELAX_MIN_SUPPORT = 0.45`
+- `BRACE_RELAX_MIN_BRACE = 0.25`
+- `BRACE_RELAX_MAX_FRACTION = 0.12`
+- `BRACE_RELAX_MAX_CELLS = 2.0`
+
+## Validation Commands
+Run from `python/`:
+
+```bash
+python -m py_compile strategies/lbcp_stability/strategy.py
+```
+
+```bash
+python - <<'PY'
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath('run_experiment.py')))
+from config import BinConfig, ExperimentConfig, Box
+from dataset.generator import generate_uniform
+from simulator.bin_state import BinState
+from strategies.base_strategy import get_strategy
+from run_experiment import run_experiment
+
+boxes = generate_uniform(n=10, min_dim=200.0, max_dim=350.0, seed=11)
+base_bin = BinConfig(length=1200.0, width=800.0, height=2700.0, resolution=10.0)
+
+cfg = ExperimentConfig(
+    bin=base_bin,
+    strategy_name='lbcp_stability',
+    enable_stability=True,
+    min_support_ratio=0.8,
+    allow_all_orientations=False,
+    render_3d=False,
+    verbose=False,
+)
+r = run_experiment(cfg, boxes)
+m = r['metrics']
+print(f"lbcp_stability: completed={r.get('completed', True)} placed={m['boxes_placed']}/{m['boxes_total']} fill={m['fill_rate']:.4f} stability={m['stability_rate']:.4f} time_ms={m['computation_time_ms']:.1f}")
+
+strat = get_strategy('lbcp_stability')
+strat.on_episode_start(ExperimentConfig(bin=base_bin, strategy_name='lbcp_stability'))
+_ = strat.decide_placement(Box(id=999, length=300.0, width=200.0, height=150.0, weight=1.0), BinState(base_bin))
+diag = strat.get_last_diagnostics()
+print('diag_has_rejected_min_support:', 'rejected_min_support' in diag)
+print('diag_has_brace_counter:', 'brace_relaxed_accepts' in diag)
+PY
+```
+
+Observed output:
+
+```
+lbcp_stability: completed=True placed=10/10 fill=0.0748 stability=1.0000 time_ms=44249.0
+diag_has_rejected_min_support: True
+diag_has_brace_counter: True
+```

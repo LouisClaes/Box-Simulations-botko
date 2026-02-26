@@ -1,81 +1,105 @@
 # Tsang Multi-Bin Strategy
 
-## Overview
-Heuristic implementation of the dual-bin packing logic from Tsang et al. (2025, Computers in Industry). Implements the bin-routing and bin-replacement mechanics from the DeepPack3D system as a `MultiBinStrategy` for the `MultiBinPipeline`. Routes each box to the bin where it achieves the best surface contact, with a Best-Fit bias (prefer the fuller bin).
+## Core Logic
+`tsang_multibin` is a native `MultiBinStrategy` for `MultiBinPipeline`.
 
-## Paper
-Tsang, C.W., Tsang, E.C.C., & Wang, X. (2025). "A deep reinforcement learning approach for online and concurrent 3D bin packing optimisation with bin replacement strategies." *Computers in Industry*, Vol. 164, Article 104202. https://doi.org/10.1016/j.compind.2024.104202
+For each bin, it runs a strict candidate pass and, if needed, a denser fallback pass. The best in-bin placement is then combined with a height-tapered best-fit bin bonus.
 
-GitHub: https://github.com/SoftwareImpacts/SIMPAC-2024-311 (DeepPack3D, MIT license)
+### In-bin score
+For a feasible candidate `(x, y, z, ol, ow, oh)`:
 
-## Algorithm
-For each incoming box:
-1. **Per-bin search**: for each active bin, find the best (x, y, orientation) using surface-contact scoring.
-2. **Bin scoring**: apply a Best-Fit fill bonus (prefer the fuller bin).
-3. **Cross-bin decision**: route to the globally best (bin, position, orientation).
+```text
+height_norm   = z / H
+top_norm      = (z + oh) / H
+height_growth = max(0, (z + oh - current_max_h) / H)
+position_pen  = (x + y) / (L + W)
+tower_pen     = top_norm^2 + height_growth * (1 - contact_ratio)
 
-### Placement score per bin
-```
-in_bin_score = CONTACT_WEIGHT × contact_ratio
-             - HEIGHT_PENALTY_WEIGHT × height_norm
-             + 0.5 × support_ratio
-
-fill_bonus = bin_fill_rate × FILL_BONUS_WEIGHT
-
-total_score = in_bin_score + fill_bonus
+score = + 6.0 * contact_ratio
+        + 1.5 * support_ratio
+        - 3.0 * height_norm
+        - 7.0 * height_growth
+        - 5.0 * tower_pen
+        - 0.5 * position_pen
 ```
 
-### Key constants
-| Constant | Value | Role |
-|----------|-------|------|
-| `CONTACT_WEIGHT` | 5.0 | Surface contact |
-| `FILL_BONUS_WEIGHT` | 2.0 | Best-Fit bias |
-| `HEIGHT_PENALTY_WEIGHT` | 1.0 | Prefer low placements |
-| `MIN_SUPPORT` | 0.30 | Anti-float |
+### Cross-bin routing score
+```text
+height_taper = max(0, 1 - max_height / (0.72 * H))
+fill_bonus   = fill_rate * 2.0 * height_taper
 
-### Bin replacement strategies (Tsang 2025)
-The paper defines 5 replacement policies. The strategy focuses on the **bin-routing** component; replacement is handled externally by the `MultiBinOrchestrator` or `MultiBinPipeline`. The five policies from the paper are:
-- **FILL**: Close when utilisation > 85%
-- **HEIGHT**: Close when max height > 90%
-- **FAIL**: Close after N consecutive rejections
-- **COMBINED** (recommended): FILL OR HEIGHT OR FAIL
-- **MANUAL**: External trigger
+total_score  = in_bin_score + fill_bonus
+```
 
-## Performance (50 boxes, 1200×800×2700mm EUR pallet, 2 bins, buffer=5, seed=42)
-| Metric | Value |
-|--------|-------|
-| Aggregate fill rate | **39.2%** (across 2 bins) |
-| Boxes placed | 50/50 (100%) |
-| Bins used | 2 |
-| Computation time | ~92s total (1.84s/box) |
+This keeps best-fit behavior while reducing late-stage tall-tower bias.
 
-**Note:** 100% placement rate — the dual-bin system eliminates rejections by always routing to the better bin. The aggregate fill (39.2%) reflects 2 bins used for 50 boxes where 1 bin could hold ~65-70%.
+## Candidate Generation
+Primary and fallback passes both use margin-aware candidates:
+- legal wall anchors (`margin`-compliant),
+- placed-box corner/edge anchors,
+- orientation-offset anchors (`p.x - ol - margin`, `p.y - ow - margin`, etc.),
+- interior grid sweep.
 
-## Class: `TsangMultiBinStrategy(MultiBinStrategy)`
-- **Registry name:** `tsang_multibin`
-- **Type:** Multi-bin (`MultiBinStrategy`) — requires `MultiBinPipeline`
-- **NOT compatible** with single-bin `run_experiment.py` or `MultiBinOrchestrator`
+Fallback pass adds denser local jitter around recent anchors and a tighter grid step.
 
-## Integration
-```python
-from simulator.multi_bin_pipeline import MultiBinPipeline, PipelineConfig
+## Feasibility Rules
+All phases keep hard constraints strict:
+- anti-float support `>= 0.30`,
+- optional stability threshold if enabled,
+- `is_margin_clear(...)`,
+- bin bounds and height limit.
+
+## Quick Validation
+From `python/`:
+
+```powershell
+python -m compileall strategies/tsang_multibin/strategy.py
+```
+
+```powershell
+@'
+import importlib.util
+import pathlib
+import sys
+import types
+from config import Box, BinConfig
 from simulator.buffer import BufferPolicy
-from config import BinConfig
-import strategies  # registers all strategies
+from simulator.multi_bin_pipeline import MultiBinPipeline, PipelineConfig
 
-from strategies.base_strategy import MULTIBIN_STRATEGY_REGISTRY
-strategy = MULTIBIN_STRATEGY_REGISTRY["tsang_multibin"]()
+root = pathlib.Path.cwd()
+pkg = types.ModuleType("strategies")
+pkg.__path__ = [str((root / "strategies").resolve())]
+sys.modules["strategies"] = pkg
 
-config = PipelineConfig(
+base_path = root / "strategies" / "base_strategy.py"
+base_spec = importlib.util.spec_from_file_location("strategies.base_strategy", base_path)
+base_mod = importlib.util.module_from_spec(base_spec)
+sys.modules["strategies.base_strategy"] = base_mod
+base_spec.loader.exec_module(base_mod)
+
+tsang_path = root / "strategies" / "tsang_multibin" / "strategy.py"
+tsang_spec = importlib.util.spec_from_file_location("strategies.tsang_multibin.strategy", tsang_path)
+tsang_mod = importlib.util.module_from_spec(tsang_spec)
+sys.modules["strategies.tsang_multibin.strategy"] = tsang_mod
+tsang_spec.loader.exec_module(tsang_mod)
+
+boxes = [
+    Box(id=1, length=380, width=280, height=220),
+    Box(id=2, length=420, width=320, height=240),
+    Box(id=3, length=360, width=260, height=200),
+    Box(id=4, length=300, width=240, height=260),
+    Box(id=5, length=340, width=220, height=210),
+    Box(id=6, length=260, width=200, height=180),
+]
+
+cfg = PipelineConfig(
     n_bins=2,
-    buffer_size=5,
+    buffer_size=4,
     buffer_policy=BufferPolicy.LARGEST_FIRST,
-    bin_config=BinConfig(length=1200, width=800, height=2700, resolution=10.0),
+    bin_config=BinConfig(length=1200, width=800, height=2700, resolution=10.0, margin=20.0),
 )
-pipeline = MultiBinPipeline(strategy=strategy, config=config)
-result = pipeline.run(boxes)
-print(f"Aggregate fill: {result.aggregate_fill_rate:.1%}")
-```
 
-## Comparison with DRL version
-This is the **heuristic baseline** for DeepPack3D. The full Tsang 2025 system uses a DQN policy (TensorFlow 2.10) trained with bin replacement strategies. Expected DRL performance: 76.8–79.7% fill. See `python/external_repos/SIMPAC-2024-311/` for the TF implementation (PyTorch port pending).
+result = MultiBinPipeline(strategy=tsang_mod.TsangMultiBinStrategy(), config=cfg).run(boxes)
+print("placed", result.total_placed, "rejected", result.total_rejected, "fill", round(result.aggregate_fill_rate, 4))
+'@ | python -
+```

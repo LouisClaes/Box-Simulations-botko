@@ -70,14 +70,8 @@ def load_model(
 
     # Reconstruct config from checkpoint if not provided
     if config is None:
-        config = PCTTransformerConfig()
         saved_cfg = checkpoint.get('config', {})
-        for key, value in saved_cfg.items():
-            if hasattr(config, key) and not key.startswith('_'):
-                try:
-                    setattr(config, key, value)
-                except (TypeError, AttributeError):
-                    pass
+        config = PCTTransformerConfig.from_dict(saved_cfg)
 
     network = PCTTransformerNet(config).to(device)
     network.load_state_dict(checkpoint['model_state_dict'])

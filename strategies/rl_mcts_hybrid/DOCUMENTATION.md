@@ -1,5 +1,27 @@
 # rl_mcts_hybrid: The Ultimate 6th RL Strategy
 
+## Operational Update (2026-02-25)
+
+`train.py` now includes long-run HPC hardening:
+
+- atomic checkpoint writes
+- `checkpoints/latest.pt` maintained on every save
+- resume from `--resume auto` / `--resume latest`
+- optimizer + RNG + stage/counter state restoration
+- signal-safe interruption checkpoints (`SIGTERM`, `SIGINT`)
+- configurable intervals: `--log_interval`, `--eval_interval`, `--checkpoint_interval`
+
+Recommended production call:
+
+```bash
+python strategies/rl_mcts_hybrid/train.py \
+  --output_dir outputs/rl_mcts_hybrid_run1 \
+  --total_timesteps 5000000 \
+  --num_envs 16 \
+  --lr 3e-4 \
+  --resume auto
+```
+
 ## What is this?
 
 This is a reinforcement learning strategy for **3D bin packing** — the problem of fitting boxes onto pallets as efficiently as possible. Think of it like a really smart Tetris player, but in 3D, with real logistics constraints.
@@ -272,22 +294,28 @@ rl_mcts_hybrid/
 ```bash
 cd "python/full workflow"
 
-# Phase 1: Imitation pre-training (~30 min)
-python -m strategies.rl_mcts_hybrid.train --phase 1
+# Full training
+python -m strategies.rl_mcts_hybrid.train \
+  --output_dir outputs/rl_mcts_hybrid \
+  --total_timesteps 5000000 \
+  --num_envs 16 \
+  --resume auto
 
-# Phase 2: Curriculum RL (~16h GPU)
-python -m strategies.rl_mcts_hybrid.train --phase 2 --resume
+# Imitation only
+python -m strategies.rl_mcts_hybrid.train --phase imitation --output_dir outputs/rl_mcts_hybrid
 
-# Phase 3: MCTS-improved (~8h GPU)
-python -m strategies.rl_mcts_hybrid.train --phase 3 --resume
+# RL-only continuation from latest checkpoint
+python -m strategies.rl_mcts_hybrid.train --phase rl --resume auto --output_dir outputs/rl_mcts_hybrid
 ```
 
 ### HPC (SLURM)
 
 ```bash
-# Update rl_common/hpc/train_all.sh to include rl_mcts_hybrid
-# Then:
-sbatch rl_common/hpc/train_all.sh
+# Full pipeline (train + evaluate + visualization)
+sbatch strategies/rl_common/hpc/train_all.sh
+
+# Or direct orchestrator control
+python strategies/rl_common/hpc/run_rl_pipeline.py --mode full --gpus 0,1,2,3
 ```
 
 ### Key Training Arguments
@@ -297,9 +325,12 @@ sbatch rl_common/hpc/train_all.sh
 | `--total_timesteps` | 5000000 | Total environment steps |
 | `--num_envs` | 16 | Parallel environments |
 | `--lr` | 3e-4 | Learning rate |
-| `--phase` | 1 | Training phase (1/2/3) |
-| `--resume` | False | Resume from last checkpoint |
+| `--phase` | all | `all`, `imitation`, or `rl` |
+| `--resume` | None | Checkpoint path, `latest`, or `auto` |
 | `--skip_imitation` | False | Skip Phase 1 |
+| `--checkpoint_interval` | 10000 | Periodic checkpoint interval (steps) |
+| `--eval_interval` | 5000 | Evaluation interval (steps) |
+| `--log_interval` | 1000 | Logging interval (steps) |
 | `--mcts_sims` | 50 | MCTS simulations per step |
 | `--seed` | 42 | Random seed |
 

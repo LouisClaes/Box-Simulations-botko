@@ -1,60 +1,19 @@
 """
-Tsang Multi-Bin Strategy (MultiBinStrategy).
-=============================================
+Tsang Multi-Bin heuristic strategy.
 
-Source Paper:
-    Tsang, Mo, Chung, Lee (2025).
-    "A deep reinforcement learning approach for online and concurrent 3D bin
-    packing optimisation with bin replacement strategies",
-    Computers in Industry, Vol. 164, Article 104202.
-    Companion software: DeepPack3D (SIMPAC-2024-311, MIT license).
-
-This is the HEURISTIC (non-DRL) implementation of the dual-bin packing logic.
-It implements the key bin-routing and bin-replacement mechanics from Tsang 2025:
-
-Bin Selection (routing):
-    Best-Fit: route box to whichever bin has higher fill rate (prefers fuller bin).
-    This prevents one bin from becoming too fragmented.
-
-Bin Replacement Strategies (when should a bin be "closed"?):
-    The original paper defines 5 strategies:
-    - FILL:     Close bin when utilization > threshold (default 85%)
-    - HEIGHT:   Close bin when max height > threshold (default 90%)
-    - FAIL:     Close bin after N consecutive placement failures
-    - COMBINED: Combination of FILL, HEIGHT, or FAIL (recommended by Tsang 2025)
-    - MANUAL:   External trigger (not used here)
-
-    Our MultiBinStrategy interface does not manage bin closing (that's the
-    orchestrator's job), but we implement the bin-preference scoring that
-    naturally implements the bin-replacement logic:
-    - Prefer the bin that is closer to "ready to close" (higher fill = best-fit)
-    - Reject placement in a bin that should be closed
-
-Algorithm:
-    For each call to decide_placement(box, bin_states):
-    1. For each active bin, compute best (x, y, orient) using surface-contact scoring.
-    2. Score each (bin, placement) pair:
-       - contact_ratio * 5.0 + fill_bonus * 2.0 - height_penalty * 1.0
-       - fill_bonus: bin.fill_rate (best-fit: prefer fuller bins)
-    3. Return MultiBinDecision for the globally best (bin, x, y, orient).
-
-Performance:
-    Expected fill rate: 72-78% (dual-bin, heuristic version)
-    Based on Tsang 2025 results: DRL version achieves 76.8-79.7%
-    Heuristic baseline expected to achieve ~70-75%
-
-References:
-    Tsang et al. (2025), Computers in Industry Vol. 164
-    Zhao et al. (2021), AAAI - CMDP baseline used as reference
+Implements a dual-bin best-fit routing policy with margin-aware candidate
+sampling, dense fallback search, and anti-tower placement scoring.
 """
 
 import numpy as np
-from typing import Optional, List, Tuple
+from typing import List, Optional, Set, Tuple
 
 from config import Box, ExperimentConfig, Orientation
 from simulator.bin_state import BinState
 from strategies.base_strategy import (
-    MultiBinStrategy, MultiBinDecision, register_multibin_strategy,
+    MultiBinDecision,
+    MultiBinStrategy,
+    register_multibin_strategy,
 )
 
 
@@ -62,36 +21,26 @@ from strategies.base_strategy import (
 # Constants
 # ---------------------------------------------------------------------------
 
-MIN_SUPPORT: float = 0.30         # Anti-float threshold (always enforced)
-FILL_BONUS_WEIGHT: float = 2.0    # Reward placing in fuller bin (best-fit)
-CONTACT_WEIGHT: float = 5.0       # Reward bottom contact (stability + efficiency)
-HEIGHT_PENALTY_WEIGHT: float = 1.0  # Penalize high placements
-CONTACT_TOLERANCE: float = 0.5    # cm tolerance for height matching
+MIN_SUPPORT: float = 0.30
 
+# Bin-routing bonus (best-fit) with a height taper to avoid late-stage towers.
+FILL_BONUS_WEIGHT: float = 2.0
+FILL_BONUS_HEIGHT_RATIO: float = 0.72
 
-# ---------------------------------------------------------------------------
-# Strategy
-# ---------------------------------------------------------------------------
+# In-bin placement scoring.
+CONTACT_WEIGHT: float = 6.0
+SUPPORT_WEIGHT: float = 1.5
+HEIGHT_PENALTY_WEIGHT: float = 3.0
+HEIGHT_GROWTH_WEIGHT: float = 7.0
+TOWER_PENALTY_WEIGHT: float = 5.0
+POSITION_WEIGHT: float = 0.5
+
+CONTACT_TOLERANCE: float = 0.5
+
 
 @register_multibin_strategy
 class TsangMultiBinStrategy(MultiBinStrategy):
-    """
-    Dual-bin heuristic implementing Tsang et al. (2025) bin routing logic.
-
-    Routes each box to the bin where it achieves the best surface contact
-    score, with a best-fit bias (prefer the fuller bin).
-
-    This is the greedy heuristic version of the DeepPack3D dual-bin system.
-    It does not use the DQN but implements the same bin-routing principles.
-
-    Key contribution from Tsang 2025 implemented here:
-    - Best-fit bin routing (fuller bin preferred via fill_bonus)
-    - Surface contact scoring for placement quality
-    - Works natively with MultiBinPipeline (no orchestrator wrapper needed)
-
-    Attributes:
-        name: "tsang_multibin"
-    """
+    """Dual-bin heuristic with best-fit routing and dense fallback search."""
 
     name: str = "tsang_multibin"
 
@@ -101,7 +50,7 @@ class TsangMultiBinStrategy(MultiBinStrategy):
 
     def on_episode_start(self, config) -> None:
         super().on_episode_start(config)
-        # Support both ExperimentConfig (.bin) and PipelineConfig (.bin_config)
+        # Support both ExperimentConfig (.bin) and PipelineConfig (.bin_config).
         self._bin_cfg = getattr(config, "bin", None) or getattr(config, "bin_config", None)
         self._allow_all = getattr(config, "allow_all_orientations", False)
         self._scan_step = max(1.0, self._bin_cfg.resolution) if self._bin_cfg else 1.0
@@ -111,34 +60,24 @@ class TsangMultiBinStrategy(MultiBinStrategy):
         box: Box,
         bin_states: List[BinState],
     ) -> Optional[MultiBinDecision]:
-        """
-        Route box to best bin using surface contact + best-fit scoring.
-
-        Args:
-            box:        Box to place.
-            bin_states: All active bin states (read-only).
-
-        Returns:
-            MultiBinDecision(bin_index, x, y, orientation_idx) or None.
-        """
+        """Choose (bin, x, y, orientation) with highest global score."""
         bin_cfg = getattr(self, "_bin_cfg", None)
         if bin_cfg is None:
             return None
 
-        step = self._scan_step
-
-        # Resolve orientations
         allow_all = getattr(self, "_allow_all", False)
-        if allow_all:
-            orientations = Orientation.get_all(box.length, box.width, box.height)
-        else:
-            orientations = Orientation.get_flat(box.length, box.width, box.height)
+        orientations = (
+            Orientation.get_all(box.length, box.width, box.height)
+            if allow_all
+            else Orientation.get_flat(box.length, box.width, box.height)
+        )
 
-        # Quick check: any orientation fits in the bin at all?
         valid_orients = [
             (oidx, ol, ow, oh)
             for oidx, (ol, ow, oh) in enumerate(orientations)
-            if ol <= bin_cfg.length and ow <= bin_cfg.width and oh <= bin_cfg.height
+            if ol <= bin_cfg.length + 1e-6
+            and ow <= bin_cfg.width + 1e-6
+            and oh <= bin_cfg.height + 1e-6
         ]
         if not valid_orients:
             return None
@@ -147,104 +86,163 @@ class TsangMultiBinStrategy(MultiBinStrategy):
         best_decision: Optional[MultiBinDecision] = None
 
         for bin_idx, bin_state in enumerate(bin_states):
-            fill_bonus = bin_state.get_fill_rate() * FILL_BONUS_WEIGHT
-
-            # Get best placement in this bin
             result = self._best_in_bin(
-                box, bin_state, valid_orients, step, self._config
+                bin_state=bin_state,
+                valid_orients=valid_orients,
+                step=self._scan_step,
+                cfg=self._config,
             )
             if result is None:
                 continue
 
             x, y, oidx, placement_score = result
+
+            # Height-tapered best-fit bonus: still prefer fuller bins, but reduce
+            # bias when a bin is already too tall.
+            soft_close_h = max(1.0, bin_state.config.height * FILL_BONUS_HEIGHT_RATIO)
+            height_taper = max(0.0, 1.0 - (bin_state.get_max_height() / soft_close_h))
+            fill_bonus = bin_state.get_fill_rate() * FILL_BONUS_WEIGHT * height_taper
             total_score = placement_score + fill_bonus
 
             if total_score > best_score:
                 best_score = total_score
                 best_decision = MultiBinDecision(
-                    bin_index=bin_idx, x=x, y=y, orientation_idx=oidx
+                    bin_index=bin_idx,
+                    x=x,
+                    y=y,
+                    orientation_idx=oidx,
                 )
 
         return best_decision
 
     def _best_in_bin(
         self,
-        box: Box,
         bin_state: BinState,
         valid_orients: List[Tuple[int, float, float, float]],
         step: float,
         cfg: ExperimentConfig,
     ) -> Optional[Tuple[float, float, int, float]]:
-        """
-        Find the best placement in a single bin.
-
-        Scoring (per placement):
-            contact_ratio * CONTACT_WEIGHT
-            - height_norm * HEIGHT_PENALTY_WEIGHT
-
-        Args:
-            box:           Box to place.
-            bin_state:     Target bin state.
-            valid_orients: List of (oidx, ol, ow, oh) tuples.
-            step:          Grid scan step size.
-            cfg:           Experiment configuration.
-
-        Returns:
-            (x, y, orientation_idx, score) or None if no valid placement.
-        """
+        """Find best placement in one bin with strict+fallback passes."""
         bin_cfg = bin_state.config
         heightmap = bin_state.heightmap
         res = bin_cfg.resolution
-        tol = CONTACT_TOLERANCE
 
+        current_max_h = bin_state.get_max_height()
+        max_xy = max(1.0, bin_cfg.length + bin_cfg.width)
+
+        # Pass 1: normal density candidates.
+        primary_candidates = self._generate_candidates(
+            bin_state=bin_state,
+            valid_orients=valid_orients,
+            step=step,
+            dense=False,
+        )
+        best = self._score_candidates(
+            candidates=primary_candidates,
+            bin_state=bin_state,
+            valid_orients=valid_orients,
+            cfg=cfg,
+            heightmap=heightmap,
+            bin_cfg=bin_cfg,
+            res=res,
+            current_max_h=current_max_h,
+            max_xy=max_xy,
+        )
+        if best is not None:
+            return best
+
+        # Pass 2 fallback: denser candidate set to reduce None returns.
+        dense_step = max(1.0, step * 0.5)
+        fallback_candidates = self._generate_candidates(
+            bin_state=bin_state,
+            valid_orients=valid_orients,
+            step=dense_step,
+            dense=True,
+        )
+        return self._score_candidates(
+            candidates=fallback_candidates,
+            bin_state=bin_state,
+            valid_orients=valid_orients,
+            cfg=cfg,
+            heightmap=heightmap,
+            bin_cfg=bin_cfg,
+            res=res,
+            current_max_h=current_max_h,
+            max_xy=max_xy,
+        )
+
+    def _score_candidates(
+        self,
+        candidates: List[Tuple[float, float]],
+        bin_state: BinState,
+        valid_orients: List[Tuple[int, float, float, float]],
+        cfg: ExperimentConfig,
+        heightmap: np.ndarray,
+        bin_cfg,
+        res: float,
+        current_max_h: float,
+        max_xy: float,
+    ) -> Optional[Tuple[float, float, int, float]]:
+        """Evaluate all feasible (candidate, orientation) pairs."""
         best_score: float = -np.inf
         best: Optional[Tuple[float, float, int, float]] = None
 
-        # Candidate positions: placed box corners + origin
-        candidates = self._generate_candidates(bin_state, step)
-
         for cx, cy in candidates:
             for oidx, ol, ow, oh in valid_orients:
-                # Bounds
                 if cx + ol > bin_cfg.length + 1e-6:
                     continue
                 if cy + ow > bin_cfg.width + 1e-6:
                     continue
 
-                # Resting height
                 z = bin_state.get_height_at(cx, cy, ol, ow)
-
-                # Height limit
                 if z + oh > bin_cfg.height + 1e-6:
                     continue
 
-                # Anti-float support (MIN_SUPPORT = 0.30, always enforced)
                 support = 1.0
                 if z > res * 0.5:
                     support = bin_state.get_support_ratio(cx, cy, ol, ow, z)
                     if support < MIN_SUPPORT:
                         continue
 
-                # Optional strict stability
                 if cfg.enable_stability and z > res * 0.5:
                     if support < cfg.min_support_ratio:
                         continue
 
-                # Margin check (box-to-box gap enforcement)
                 if not bin_state.is_margin_clear(cx, cy, ol, ow, z, oh):
                     continue
 
-                # ── Scoring ─────────────────────────────────────────────
-                # Contact ratio: bottom face cells matching z
                 contact_ratio = self._contact_ratio(
-                    cx, cy, z, ol, ow, heightmap, bin_cfg, res, tol
+                    x=cx,
+                    y=cy,
+                    z=z,
+                    ol=ol,
+                    ow=ow,
+                    heightmap=heightmap,
+                    bin_cfg=bin_cfg,
+                    res=res,
+                    tol=CONTACT_TOLERANCE,
                 )
 
                 height_norm = z / bin_cfg.height if bin_cfg.height > 0 else 0.0
+                top_norm = (z + oh) / bin_cfg.height if bin_cfg.height > 0 else 0.0
+                height_growth = (
+                    max(0.0, (z + oh - current_max_h) / bin_cfg.height)
+                    if bin_cfg.height > 0
+                    else 0.0
+                )
+                position_penalty = (cx + cy) / max_xy
+
+                # Penalize high, peak-growing placements more strongly than broad,
+                # low-contact placements to reduce tower behavior.
+                tower_penalty = (top_norm * top_norm) + height_growth * (1.0 - contact_ratio)
+
                 score = (
                     CONTACT_WEIGHT * contact_ratio
+                    + SUPPORT_WEIGHT * support
                     - HEIGHT_PENALTY_WEIGHT * height_norm
-                    + 0.5 * support  # small stability bonus
+                    - HEIGHT_GROWTH_WEIGHT * height_growth
+                    - TOWER_PENALTY_WEIGHT * tower_penalty
+                    - POSITION_WEIGHT * position_penalty
                 )
 
                 if score > best_score:
@@ -256,49 +254,85 @@ class TsangMultiBinStrategy(MultiBinStrategy):
     def _generate_candidates(
         self,
         bin_state: BinState,
+        valid_orients: List[Tuple[int, float, float, float]],
         step: float,
+        dense: bool,
     ) -> List[Tuple[float, float]]:
-        """
-        Generate candidate (x, y) positions.
-
-        Sources:
-        1. Corners of all placed boxes (right-edge, front-edge, diagonal).
-        2. Origin (0, 0).
-        3. Grid scan at resolution step (for comprehensive coverage).
-        """
+        """Generate margin-aware candidates with orientation-offset anchors."""
         bin_cfg = bin_state.config
-        seen = set()
-        candidates = []
+        m = max(0.0, bin_cfg.margin)
+        x_min = m
+        y_min = m
+        x_max = bin_cfg.length - m
+        y_max = bin_cfg.width - m
+
+        if x_min > x_max or y_min > y_max:
+            return [(0.0, 0.0)]
+
+        seen: Set[Tuple[float, float]] = set()
+        candidates: List[Tuple[float, float]] = []
+
+        unique_lengths = sorted({ol for _, ol, _, _ in valid_orients})
+        unique_widths = sorted({ow for _, _, ow, _ in valid_orients})
 
         def add(cx: float, cy: float) -> None:
-            pt = (round(cx, 2), round(cy, 2))
-            if pt not in seen and 0 <= cx <= bin_cfg.length and 0 <= cy <= bin_cfg.width:
+            if cx < x_min - 1e-6 or cy < y_min - 1e-6:
+                return
+            if cx > x_max + 1e-6 or cy > y_max + 1e-6:
+                return
+            pt = (round(cx, 3), round(cy, 3))
+            if pt not in seen:
                 seen.add(pt)
                 candidates.append(pt)
 
-        # Always include origin
-        add(0.0, 0.0)
+        # Margin-aware wall anchors.
+        add(x_min, y_min)
+        add(x_min, y_max)
+        add(x_max, y_min)
+        add(x_max, y_max)
 
-        # Placed box corners
+        # Anchors around placed boxes.
         for p in bin_state.placed_boxes:
-            add(p.x, p.y)
-            add(p.x_max, p.y)
-            add(p.x, p.y_max)
-            add(p.x_max, p.y_max)
+            x_anchors = [p.x, p.x_max, p.x_max + m]
+            y_anchors = [p.y, p.y_max, p.y_max + m]
 
-        # Grid scan (for thorough coverage on empty bin)
-        x = 0.0
-        while x <= bin_cfg.length:
-            y = 0.0
-            while y <= bin_cfg.width:
-                add(x, y)
-                y += step
-            x += step
+            for ol in unique_lengths:
+                x_anchors.extend([p.x - ol, p.x - ol - m, p.x_max - ol])
+            for ow in unique_widths:
+                y_anchors.extend([p.y - ow, p.y - ow - m, p.y_max - ow])
 
+            for cx in x_anchors:
+                for cy in y_anchors:
+                    add(cx, cy)
+
+            if dense:
+                local_step = max(1.0, step)
+                jitters = (0.0, -local_step, local_step)
+                for bx in (p.x, p.x_max + m):
+                    for by in (p.y, p.y_max + m):
+                        for jx in jitters:
+                            for jy in jitters:
+                                add(bx + jx, by + jy)
+
+        # Interior grid sweep.
+        grid_step = max(1.0, step)
+        gx = x_min
+        while gx <= x_max + 1e-6:
+            gy = y_min
+            while gy <= y_max + 1e-6:
+                add(gx, gy)
+                gy += grid_step
+            gx += grid_step
+
+        if not candidates:
+            add(x_min, y_min)
+
+        # Low (x+y) points first to favor compact packing.
+        candidates.sort(key=lambda p: (p[0] + p[1], p[1], p[0]))
         return candidates
 
+    @staticmethod
     def _contact_ratio(
-        self,
         x: float,
         y: float,
         z: float,
@@ -309,19 +343,14 @@ class TsangMultiBinStrategy(MultiBinStrategy):
         res: float,
         tol: float,
     ) -> float:
-        """
-        Fraction of box footprint cells that match the resting height z.
-
-        For floor placements (z ≈ 0): returns 1.0 (perfect contact).
-        For elevated placements: counts cells within tol of z.
-        """
+        """Fraction of footprint cells at resting height z."""
         if z < res * 0.5:
-            return 1.0  # Floor placement: full contact
+            return 1.0
 
         gx = int(round(x / res))
         gy = int(round(y / res))
-        gx_end = min(gx + int(round(ol / res)), bin_cfg.grid_l)
-        gy_end = min(gy + int(round(ow / res)), bin_cfg.grid_w)
+        gx_end = min(gx + max(1, int(round(ol / res))), bin_cfg.grid_l)
+        gy_end = min(gy + max(1, int(round(ow / res))), bin_cfg.grid_w)
 
         region = heightmap[gx:gx_end, gy:gy_end]
         if region.size == 0:

@@ -26,8 +26,9 @@ import os
 import csv
 import json
 import time
-from typing import Dict, Optional, List, Any
-from collections import defaultdict
+import tempfile
+from typing import Dict, Optional, List, Any, Deque
+from collections import defaultdict, deque
 
 import numpy as np
 
@@ -53,10 +54,12 @@ class TrainingLogger:
         log_dir: str,
         strategy_name: str = "rl",
         use_tensorboard: bool = True,
+        max_history_points: int = 20000,
     ):
         self.log_dir = os.path.abspath(log_dir)
         self.strategy_name = strategy_name
         self._use_tensorboard = use_tensorboard
+        self._max_history_points = max(1000, int(max_history_points))
 
         os.makedirs(self.log_dir, exist_ok=True)
         os.makedirs(os.path.join(self.log_dir, "plots"), exist_ok=True)
@@ -65,9 +68,12 @@ class TrainingLogger:
         self._csv_path = os.path.join(self.log_dir, "metrics.csv")
         self._csv_file = open(self._csv_path, "w", newline="")
         self._csv_writer = None  # Initialised on first write
+        self._csv_fieldnames: List[str] = []
 
         # In-memory history
-        self._history: Dict[str, List[float]] = defaultdict(list)
+        self._history: Dict[str, Deque[float]] = defaultdict(
+            lambda: deque(maxlen=self._max_history_points)
+        )
         self._step_count = 0
         self._start_time = time.time()
 
@@ -87,6 +93,49 @@ class TrainingLogger:
         with open(path, "w") as f:
             json.dump(config, f, indent=2, default=str)
 
+    def _ensure_csv_schema(self, metrics: Dict[str, Any]) -> None:
+        """Ensure CSV schema can accommodate the provided metric keys."""
+        incoming = sorted(metrics.keys())
+        if self._csv_writer is None:
+            self._csv_fieldnames = incoming
+            self._csv_writer = csv.DictWriter(
+                self._csv_file,
+                fieldnames=self._csv_fieldnames,
+                extrasaction="ignore",
+            )
+            self._csv_writer.writeheader()
+            return
+
+        new_keys = [k for k in incoming if k not in self._csv_fieldnames]
+        if not new_keys:
+            return
+
+        merged_fieldnames = sorted(set(self._csv_fieldnames).union(incoming))
+        self._csv_file.flush()
+        self._csv_file.close()
+
+        fd, tmp_path = tempfile.mkstemp(prefix="metrics_schema_", suffix=".csv", dir=self.log_dir)
+        os.close(fd)
+        try:
+            with open(self._csv_path, "r", newline="") as src, open(tmp_path, "w", newline="") as dst:
+                reader = csv.DictReader(src)
+                writer = csv.DictWriter(dst, fieldnames=merged_fieldnames, extrasaction="ignore")
+                writer.writeheader()
+                for row in reader:
+                    writer.writerow(row)
+            os.replace(tmp_path, self._csv_path)
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+        self._csv_file = open(self._csv_path, "a", newline="")
+        self._csv_fieldnames = merged_fieldnames
+        self._csv_writer = csv.DictWriter(
+            self._csv_file,
+            fieldnames=self._csv_fieldnames,
+            extrasaction="ignore",
+        )
+
     def log_episode(self, episode: int, **metrics: float) -> None:
         """
         Log metrics for one episode.
@@ -100,12 +149,7 @@ class TrainingLogger:
         metrics["wall_time_s"] = time.time() - self._start_time
 
         # CSV
-        if self._csv_writer is None:
-            self._csv_writer = csv.DictWriter(
-                self._csv_file,
-                fieldnames=sorted(metrics.keys()),
-            )
-            self._csv_writer.writeheader()
+        self._ensure_csv_schema(metrics)
         self._csv_writer.writerow(metrics)
         self._csv_file.flush()
 
@@ -178,7 +222,7 @@ class TrainingLogger:
 
         # Panel 1: Episode reward
         if "reward" in self._history:
-            rewards = self._history["reward"]
+            rewards = list(self._history["reward"])
             episodes = list(range(len(rewards)))
             axes[0, 0].plot(episodes, rewards, alpha=0.3, color="steelblue", linewidth=0.5)
             # Moving average
@@ -193,7 +237,7 @@ class TrainingLogger:
 
         # Panel 2: Fill rate
         if "fill" in self._history:
-            fills = self._history["fill"]
+            fills = list(self._history["fill"])
             episodes = list(range(len(fills)))
             axes[0, 1].plot(episodes, fills, alpha=0.3, color="forestgreen", linewidth=0.5)
             if len(fills) > 10:
@@ -208,7 +252,7 @@ class TrainingLogger:
 
         # Panel 3: Loss
         if "loss" in self._history:
-            losses = self._history["loss"]
+            losses = list(self._history["loss"])
             episodes = list(range(len(losses)))
             axes[1, 0].plot(episodes, losses, color="firebrick", linewidth=1)
             axes[1, 0].set_title("Training Loss")
@@ -219,14 +263,14 @@ class TrainingLogger:
 
         # Panel 4: Epsilon / Entropy
         if "epsilon" in self._history:
-            eps = self._history["epsilon"]
+            eps = list(self._history["epsilon"])
             axes[1, 1].plot(range(len(eps)), eps, color="darkorange", linewidth=2)
             axes[1, 1].set_title("Exploration (Epsilon)")
             axes[1, 1].set_xlabel("Episode")
             axes[1, 1].set_ylabel("Epsilon")
             axes[1, 1].grid(True, alpha=0.3)
         elif "entropy" in self._history:
-            ent = self._history["entropy"]
+            ent = list(self._history["entropy"])
             axes[1, 1].plot(range(len(ent)), ent, color="purple", linewidth=2)
             axes[1, 1].set_title("Policy Entropy")
             axes[1, 1].set_xlabel("Episode")
@@ -244,7 +288,7 @@ class TrainingLogger:
         # ── Reward distribution ──
         if "reward" in self._history and len(self._history["reward"]) > 20:
             fig2, ax2 = plt.subplots(figsize=(8, 5))
-            rewards = self._history["reward"]
+            rewards = list(self._history["reward"])
             n = len(rewards)
             # Compare first quarter vs last quarter
             q1 = rewards[:n//4]
@@ -264,7 +308,7 @@ class TrainingLogger:
         # ── Fill rate progress ──
         if "fill" in self._history and len(self._history["fill"]) > 20:
             fig3, ax3 = plt.subplots(figsize=(10, 5))
-            fills = self._history["fill"]
+            fills = list(self._history["fill"])
             episodes = list(range(len(fills)))
             ax3.scatter(episodes, fills, alpha=0.2, s=5, color="forestgreen")
             # Rolling mean and std
@@ -296,7 +340,7 @@ class TrainingLogger:
 
     def get_history(self) -> Dict[str, List[float]]:
         """Return the full metric history."""
-        return dict(self._history)
+        return {k: list(v) for k, v in self._history.items()}
 
     def get_best(self, metric: str = "fill") -> Optional[float]:
         """Return the best value of a metric."""

@@ -1,0 +1,71 @@
+{
+  "created_at": "2026-02-25T22:07:17Z",
+  "host": "Laptop-Louis",
+  "mode": "train",
+  "profile": "quick",
+  "run_dir": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_230717",
+  "workflow_root": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python",
+  "strategies": [
+    "rl_mcts_hybrid"
+  ],
+  "gpu_ids": [],
+  "jobs": {
+    "rl_mcts_hybrid": {
+      "train": {
+        "command": [
+          "C:\\Users\\Louis\\anaconda3\\python.exe",
+          "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\strategies\\rl_mcts_hybrid\\train.py",
+          "--output_dir",
+          "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_230717\\rl_mcts_hybrid",
+          "--total_timesteps",
+          "8192",
+          "--num_envs",
+          "2",
+          "--lr",
+          "3e-4",
+          "--seed",
+          "42",
+          "--resume",
+          "auto",
+          "--skip_imitation",
+          "--checkpoint_interval",
+          "1024",
+          "--eval_interval",
+          "1024",
+          "--log_interval",
+          "256"
+        ],
+        "log_path": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_230717\\logs\\train_rl_mcts_hybrid.log",
+        "return_code": 0,
+        "duration_s": 0.0,
+        "gpu_id": "dryrun-gpu",
+        "started_at": "2026-02-25T22:18:02Z",
+        "finished_at": "2026-02-25T22:18:02Z",
+        "stage": "train",
+        "strategy": "rl_mcts_hybrid"
+      }
+    }
+  },
+  "last_invocation": {
+    "timestamp": "2026-02-25T22:18:02Z",
+    "argv": [
+      "strategies/rl_common/hpc/run_rl_pipeline.py",
+      "--mode",
+      "train",
+      "--profile",
+      "quick",
+      "--dry_run",
+      "--output_root",
+      "outputs/rl_training_smoke",
+      "--strategies",
+      "rl_mcts_hybrid"
+    ],
+    "mode": "train",
+    "run_dir": "C:\\Users\\Louis\\Downloads\\stapelalgortime\\python\\outputs\\rl_training_smoke\\20260225_230717",
+    "strategies": [
+      "rl_mcts_hybrid"
+    ]
+  },
+  "completed_at": "2026-02-25T22:18:02Z",
+  "status": "done"
+}

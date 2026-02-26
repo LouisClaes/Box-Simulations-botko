@@ -47,7 +47,8 @@ async def send_telegram(
     if not token:
         return False
 
-    chat_id = chat_id or DEFAULT_CHAT_ID
+    # Resolve chat id at call-time so late-loaded .env values are respected.
+    chat_id = chat_id or os.environ.get("TELEGRAM_CHAT_ID", "") or DEFAULT_CHAT_ID
     if not chat_id:
         return False
 

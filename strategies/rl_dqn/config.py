@@ -158,7 +158,7 @@ class DQNConfig:
     noisy_nets: bool = False
 
     # ── Replay Buffer ─────────────────────────────────────────────────────
-    buffer_capacity: int = 500_000
+    buffer_capacity: int = 100_000
     buffer_alpha: float = 0.6
     buffer_beta_start: float = 0.4
     buffer_beta_end: float = 1.0

@@ -15,6 +15,7 @@ Tests cover:
 
 import sys
 import os
+import numpy as np
 import pytest
 
 # Ensure the project root is on the path
@@ -23,7 +24,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config import Box, BinConfig, ExperimentConfig, PlacementDecision
 from simulator.bin_state import BinState
 from simulator.pipeline_simulator import PipelineSimulator
-from strategies.base_strategy import STRATEGY_REGISTRY
+from strategies.base_strategy import STRATEGY_REGISTRY, MULTIBIN_STRATEGY_REGISTRY
 import strategies  # registers all strategies
 
 
@@ -88,6 +89,14 @@ TOP3_STRATEGIES = [
 def make_strategy(name: str, config: ExperimentConfig):
     """Return an initialised strategy instance."""
     cls = STRATEGY_REGISTRY[name]
+    strategy = cls()
+    strategy.on_episode_start(config)
+    return strategy
+
+
+def make_multibin_strategy(name: str, config: ExperimentConfig):
+    """Return an initialised multi-bin strategy instance."""
+    cls = MULTIBIN_STRATEGY_REGISTRY[name]
     strategy = cls()
     strategy.on_episode_start(config)
     return strategy
@@ -267,9 +276,158 @@ class TestIntegrationFillRate:
                 )
 
         hm = sim.get_bin_state().heightmap
-        assert not any([float('nan') == v for v in hm.flat]), (
+        assert not np.isnan(hm).any(), (
             f"{strategy_name}: NaN found in heightmap."
         )
         assert float(hm.min()) >= 0.0, (
             f"{strategy_name}: negative height found in heightmap."
         )
+
+
+# ---------------------------------------------------------------------------
+# PRD regression checks: underperforming strategies (excluding two_bounded)
+# ---------------------------------------------------------------------------
+
+class TestTsangMultiBinPRD:
+    def test_tsang_multibin_registered(self):
+        assert "tsang_multibin" in MULTIBIN_STRATEGY_REGISTRY
+
+    def test_tsang_multibin_empty_bins_returns_decision(
+        self, small_bin_config, normal_box
+    ):
+        config = ExperimentConfig(bin=small_bin_config, strategy_name="tsang_multibin")
+        strategy = make_multibin_strategy("tsang_multibin", config)
+        bin_states = [BinState(small_bin_config), BinState(small_bin_config)]
+        decision = strategy.decide_placement(normal_box, bin_states)
+        assert decision is not None
+        assert 0 <= decision.bin_index < 2
+        assert 0.0 <= decision.x <= small_bin_config.length
+        assert 0.0 <= decision.y <= small_bin_config.width
+
+    def test_tsang_multibin_giant_box_returns_none(
+        self, small_bin_config, giant_box
+    ):
+        config = ExperimentConfig(bin=small_bin_config, strategy_name="tsang_multibin")
+        strategy = make_multibin_strategy("tsang_multibin", config)
+        bin_states = [BinState(small_bin_config), BinState(small_bin_config)]
+        decision = strategy.decide_placement(giant_box, bin_states)
+        assert decision is None
+
+    def test_tsang_multibin_smoke_pipeline_places_boxes(self, small_bin_config):
+        from dataset.generator import generate_uniform
+        from simulator.buffer import BufferPolicy
+        from simulator.multi_bin_pipeline import MultiBinPipeline, PipelineConfig
+
+        boxes = generate_uniform(n=8, seed=123, min_dim=200.0, max_dim=380.0)
+        strategy = MULTIBIN_STRATEGY_REGISTRY["tsang_multibin"]()
+        config = PipelineConfig(
+            n_bins=2,
+            buffer_size=4,
+            buffer_policy=BufferPolicy.LARGEST_FIRST,
+            bin_config=small_bin_config,
+            enable_stability=False,
+            allow_all_orientations=False,
+            verbose=False,
+        )
+        result = MultiBinPipeline(strategy=strategy, config=config).run(boxes)
+        assert result.total_placed > 0
+        assert result.aggregate_fill_rate > 0.0
+
+
+class TestPCTExpansionPRD:
+    def test_pct_expansion_registered(self):
+        assert "pct_expansion" in STRATEGY_REGISTRY
+
+    def test_pct_expansion_empty_bin_returns_decision(
+        self, exp_config, empty_bin_state, normal_box
+    ):
+        strategy = make_strategy("pct_expansion", exp_config)
+        decision = strategy.decide_placement(normal_box, empty_bin_state)
+        assert decision is not None
+
+    def test_pct_expansion_deterministic(
+        self, exp_config, empty_bin_state, normal_box
+    ):
+        results = []
+        for _ in range(3):
+            strategy = make_strategy("pct_expansion", exp_config)
+            decision = strategy.decide_placement(normal_box, empty_bin_state)
+            assert decision is not None
+            results.append((decision.x, decision.y, decision.orientation_idx))
+        assert len(set(results)) == 1
+
+    def test_pct_expansion_smoke_sequence_places_boxes(self, exp_config):
+        from dataset.generator import generate_uniform
+
+        boxes = generate_uniform(n=12, seed=42, min_dim=200.0, max_dim=380.0)
+        strategy = make_strategy("pct_expansion", exp_config)
+        sim = PipelineSimulator(exp_config)
+        for box in boxes:
+            decision = strategy.decide_placement(box, sim.get_bin_state())
+            if decision is not None:
+                sim.attempt_placement(box, decision.x, decision.y, decision.orientation_idx)
+        summary = sim.get_summary()
+        assert summary["boxes_placed"] > 0
+        assert sim.get_bin_state().get_fill_rate() > 0.0
+
+
+class TestSkylinePRD:
+    def test_skyline_registered(self):
+        assert "skyline" in STRATEGY_REGISTRY
+
+    def test_skyline_empty_bin_returns_decision(
+        self, exp_config, empty_bin_state, normal_box
+    ):
+        strategy = make_strategy("skyline", exp_config)
+        decision = strategy.decide_placement(normal_box, empty_bin_state)
+        assert decision is not None
+
+    def test_skyline_smoke_no_tower_outlier(self, exp_config):
+        from dataset.generator import generate_uniform
+
+        boxes = generate_uniform(n=14, seed=11, min_dim=180.0, max_dim=320.0)
+        strategy = make_strategy("skyline", exp_config)
+        sim = PipelineSimulator(exp_config)
+
+        for box in boxes:
+            decision = strategy.decide_placement(box, sim.get_bin_state())
+            if decision is not None:
+                sim.attempt_placement(box, decision.x, decision.y, decision.orientation_idx)
+
+        hm = sim.get_bin_state().heightmap
+        if hm.size > 0:
+            max_h = float(np.max(hm))
+            p90 = float(np.percentile(hm, 90))
+            assert (max_h - p90) <= exp_config.bin.height * 0.35
+
+    def test_skyline_uses_axis0_profile_shape(self, exp_config):
+        strategy = make_strategy("skyline", exp_config)
+        bin_state = BinState(exp_config.bin)
+        skyline = np.mean(bin_state.heightmap, axis=0)
+        assert skyline.shape[0] == exp_config.bin.grid_w
+
+
+class TestLBCPPRD:
+    def test_lbcp_registered(self):
+        assert "lbcp_stability" in STRATEGY_REGISTRY
+
+    def test_lbcp_empty_bin_returns_decision(
+        self, exp_config, empty_bin_state, normal_box
+    ):
+        strategy = make_strategy("lbcp_stability", exp_config)
+        decision = strategy.decide_placement(normal_box, empty_bin_state)
+        assert decision is not None
+
+    def test_lbcp_giant_box_returns_none(
+        self, exp_config, empty_bin_state, giant_box
+    ):
+        strategy = make_strategy("lbcp_stability", exp_config)
+        decision = strategy.decide_placement(giant_box, empty_bin_state)
+        assert decision is None
+
+    def test_lbcp_diagnostics_exposed(self, exp_config, empty_bin_state, normal_box):
+        strategy = make_strategy("lbcp_stability", exp_config)
+        _ = strategy.decide_placement(normal_box, empty_bin_state)
+        diagnostics = strategy.get_last_diagnostics()
+        assert "rejected_min_support" in diagnostics
+        assert "brace_relaxed_accepts" in diagnostics

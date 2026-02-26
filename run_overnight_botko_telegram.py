@@ -16,14 +16,48 @@ import time
 import random
 import numpy as np
 from datetime import datetime
+from pathlib import Path
 from typing import List, Dict, Any
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing
 import traceback
 import asyncio
-import resource
+try:
+    import resource  # Unix-only (available on Raspberry Pi/Linux)
+except ImportError:
+    resource = None
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+
+def _load_env_file_if_present() -> None:
+    """
+    Load KEY=VALUE pairs from local .env into os.environ (non-destructive).
+
+    This is especially useful on Raspberry Pi where runs are often started
+    as services/cron jobs without exported shell env vars.
+    """
+    env_path = Path(__file__).resolve().parent / ".env"
+    if not env_path.exists():
+        return
+
+    for raw in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[len("export "):].strip()
+        if "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key:
+            os.environ.setdefault(key, value)
+
+
+_load_env_file_if_present()
 
 from config import Box, BinConfig
 from dataset.generator import generate_rajapack
@@ -35,7 +69,6 @@ from simulator.session import (
     PackingSession, SessionConfig,
     get_box_selector, get_bin_selector,
 )
-from simulator.close_policy import RejectClosePolicy
 from simulator.close_policy_custom import FullestOnConsecutiveRejectsPolicy
 
 # Import Telegram notifier
@@ -238,6 +271,10 @@ def main():
     parser.add_argument("--smoke-test", action="store_true", help="Run a small quick test (2 min)")
     parser.add_argument("--demo", action="store_true", help="Demo run for proof-of-concept (3 datasets, ~1 day)")
     parser.add_argument("--quick", action="store_true", help="Quick run (5 datasets, ~2.5 days)")
+    parser.add_argument("--datasets", type=int, help="Override number of Rajapack datasets")
+    parser.add_argument("--shuffles", type=int, help="Override number of shuffled sequences per dataset")
+    parser.add_argument("--boxes", type=int, help="Override number of boxes per dataset")
+    parser.add_argument("--phase1-only", action="store_true", help="Run only Phase 1 baseline (skip Phase 2)")
     parser.add_argument("--resume", type=str, help="Path to a previous results.json to resume from")
     parser.add_argument("--no-telegram", action="store_true", help="Disable Telegram notifications")
     args = parser.parse_args()
@@ -245,6 +282,7 @@ def main():
     smoketest = args.smoke_test
     demorun = args.demo
     quickrun = args.quick
+    phase1_only = args.phase1_only
     use_telegram = not args.no_telegram
 
     import warnings
@@ -268,6 +306,14 @@ def main():
         n_shuffles = 3
         n_boxes = 400
 
+    # Explicit overrides (highest priority).
+    if args.datasets is not None:
+        n_datasets = args.datasets
+    if args.shuffles is not None:
+        n_shuffles = args.shuffles
+    if args.boxes is not None:
+        n_boxes = args.boxes
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output", f"botko_{timestamp}")
 
@@ -278,6 +324,7 @@ def main():
             "n_datasets": n_datasets,
             "n_shuffles": n_shuffles,
             "n_boxes": n_boxes,
+            "phase1_only": phase1_only,
             "botko_config": BOTKO_SESSION_CONFIG.to_dict(),
             "top_5": [],
         },
@@ -294,6 +341,7 @@ def main():
         n_datasets = final_output["metadata"].get("n_datasets", n_datasets)
         n_shuffles = final_output["metadata"].get("n_shuffles", n_shuffles)
         n_boxes = final_output["metadata"].get("n_boxes", n_boxes)
+        phase1_only = final_output["metadata"].get("phase1_only", phase1_only)
 
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(os.path.join(out_dir, "gifs"), exist_ok=True)
@@ -311,13 +359,14 @@ def main():
 
     # Limit CPU time per worker (soft throttling)
     # This makes workers yield CPU more readily to other processes
-    try:
-        # Get current limits
-        soft, hard = resource.getrlimit(resource.RLIMIT_CPU)
-        # Don't set hard limit, just informational
-        print(f"  CPU limits: soft={soft}, hard={hard}")
-    except (ValueError, AttributeError):
-        pass  # Not all systems support this
+    if resource is not None:
+        try:
+            # Get current limits
+            soft, hard = resource.getrlimit(resource.RLIMIT_CPU)
+            # Don't set hard limit, just informational
+            print(f"  CPU limits: soft={soft}, hard={hard}")
+        except (ValueError, AttributeError):
+            pass  # Not all systems support this
 
     # ── Strategy lists ─────────────────────────────────────────────────────
     # Exclude only strategies that need training
@@ -361,6 +410,7 @@ def main():
     print(f"  Close:       {BOTKO_SESSION_CONFIG.close_policy.describe()}")
     print(f"  Reject:      FIFO advance, front box exits (max {MAX_CONSECUTIVE_REJECTS} consecutive)")
     print(f"  Stats:       only closed pallets count in avg fill rate")
+    print(f"  Phase mode:  {'PHASE 1 ONLY' if phase1_only else 'PHASE 1 + PHASE 2'}")
     print(f"  Telegram:    {'ENABLED' if use_telegram else 'DISABLED'}")
 
     # Telegram: Experiment start
@@ -368,6 +418,7 @@ def main():
         msg = (
             f"🚀 Botko Overnight Sweep Started\n"
             f"Mode: {'Smoke Test' if smoketest else 'Full Run'}\n"
+            f"Phase mode: {'Phase 1 only' if phase1_only else 'Phase 1 + Phase 2'}\n"
             f"Datasets: {n_datasets} × {n_boxes} boxes × {n_shuffles} shuffles\n"
             f"Strategies: {len(all_strategy_names)} total\n"
             f"CPUs: {num_cpus}/4 (50%)\n"
@@ -523,7 +574,7 @@ def main():
             f"Experiments: {len(final_output['phase1_baseline'])}\n"
             f"Total pallets closed: {total_closed_p1}\n"
             f"Overall avg fill: {avg_fill_p1:.1%}\n"
-            f"Now starting Phase 2..."
+            + ("Now starting Phase 2..." if not phase1_only else "Run finished (Phase 1 only).")
         )
 
     # ── Aggregate Phase 1 to find top-5 ────────────────────────────────────
@@ -570,6 +621,32 @@ def main():
     final_output["metadata"]["top_5"] = top_5_strategies
     final_output["metadata"]["phase1_elapsed_s"] = elapsed1
     save_progress(out_dir, final_output)
+
+    if phase1_only:
+        total_elapsed = elapsed1
+        final_output["metadata"]["phase2_elapsed_s"] = 0.0
+        final_output["metadata"]["total_elapsed_s"] = total_elapsed
+        save_progress(out_dir, final_output)
+
+        print(f"\n{'='*75}")
+        print(f"  OVERNIGHT SWEEP COMPLETE (PHASE 1 ONLY)")
+        print(f"{'='*75}")
+        print(f"  Results saved to: {out_dir}/results.json")
+        print(f"  Phase 1: {elapsed1:.1f}s ({elapsed1/60:.1f} min)")
+        print(f"  Total:   {total_elapsed:.1f}s ({total_elapsed/60:.1f} min)")
+
+        if use_telegram:
+            total_closed_all = sum(r.get("pallets_closed", 0) for r in final_output["phase1_baseline"])
+            avg_fill_all = np.mean([r.get("avg_closed_fill", 0) for r in final_output["phase1_baseline"]]) if final_output["phase1_baseline"] else 0
+            send_telegram_sync(
+                f"🎉 BOTKO RUN COMPLETE (PHASE 1 ONLY)\n"
+                f"⏱ Runtime: {total_elapsed/60:.1f} min\n"
+                f"Datasets: {n_datasets}, Shuffles: {n_shuffles}, Boxes: {n_boxes}\n"
+                f"Pallets closed: {total_closed_all}\n"
+                f"Avg closed fill: {avg_fill_all:.1%}\n"
+                f"Results: {out_dir}/results.json"
+            )
+        return
 
     # ── Phase 2: Parameter sweep on top-5 ──────────────────────────────────
     box_selectors = ["default", "biggest_volume_first", "biggest_footprint_first"]

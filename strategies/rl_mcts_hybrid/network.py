@@ -71,6 +71,7 @@ from strategies.rl_mcts_hybrid.config import MCTSHybridConfig
 class HighLevelOutput(NamedTuple):
     """Output from the high-level policy."""
     action: torch.Tensor          # (B,) selected (box_idx * num_bins + bin_idx)
+    probs: torch.Tensor           # (B, num_actions) action probabilities
     log_prob: torch.Tensor        # (B,)
     entropy: torch.Tensor         # (B,)
     value: torch.Tensor           # (B,) V_high(s)
@@ -80,6 +81,7 @@ class HighLevelOutput(NamedTuple):
 class LowLevelOutput(NamedTuple):
     """Output from the low-level policy."""
     action: torch.Tensor          # (B,) candidate index
+    probs: torch.Tensor           # (B, max_candidates) action probabilities
     log_prob: torch.Tensor        # (B,)
     entropy: torch.Tensor         # (B,)
     value: torch.Tensor           # (B,) V_low(s, a_high)
@@ -569,6 +571,7 @@ class HighLevelPolicy(nn.Module):
 
         return HighLevelOutput(
             action=action,
+            probs=dist.probs,
             log_prob=log_prob,
             entropy=entropy,
             value=value,
@@ -734,6 +737,7 @@ class LowLevelPolicy(nn.Module):
 
         return LowLevelOutput(
             action=action,
+            probs=dist.probs,
             log_prob=log_prob,
             entropy=entropy,
             value=value,

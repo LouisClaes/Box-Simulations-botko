@@ -70,11 +70,21 @@ def load_evaluation_results(eval_dir: str) -> Dict[str, Dict]:
         print(f"Warning: eval_dir not found: {eval_dir}")
         return results
 
-    for entry in os.listdir(eval_dir):
-        result_file = os.path.join(eval_dir, entry, "eval_results.json")
-        if os.path.isfile(result_file):
-            with open(result_file) as f:
-                results[entry] = json.load(f)
+    candidate_names = (
+        "eval_results.json",
+        "evaluation_results.json",
+        "results.json",
+    )
+    for entry in sorted(os.listdir(eval_dir)):
+        entry_dir = os.path.join(eval_dir, entry)
+        if not os.path.isdir(entry_dir):
+            continue
+        for candidate in candidate_names:
+            result_file = os.path.join(entry_dir, candidate)
+            if os.path.isfile(result_file):
+                with open(result_file) as f:
+                    results[entry] = json.load(f)
+                break
     return results
 
 
@@ -84,9 +94,22 @@ def load_training_histories(eval_dir: str) -> Dict[str, Dict[str, List[float]]]:
     histories = {}
     parent = os.path.dirname(eval_dir)  # training output dir
 
-    for strat in ['rl_dqn', 'rl_ppo', 'rl_a2c_masked', 'rl_hybrid_hh', 'rl_pct_transformer']:
-        csv_path = os.path.join(parent, strat, "logs", "metrics.csv")
-        if os.path.isfile(csv_path):
+    strategies = [
+        "rl_dqn",
+        "rl_ppo",
+        "rl_a2c_masked",
+        "rl_hybrid_hh",
+        "rl_pct_transformer",
+        "rl_mcts_hybrid",
+    ]
+    for strat in strategies:
+        csv_candidates = [
+            os.path.join(parent, strat, "logs", "metrics.csv"),
+            os.path.join(parent, strat, "logs", "dqn", "metrics.csv"),
+            os.path.join(parent, strat, "logs", "tabular", "metrics.csv"),
+        ]
+        csv_path = next((p for p in csv_candidates if os.path.isfile(p)), None)
+        if csv_path:
             history = {}
             with open(csv_path) as f:
                 reader = csv.DictReader(f)
@@ -366,6 +389,17 @@ def main():
     parser = argparse.ArgumentParser(description='Compare RL strategies')
     parser.add_argument('--eval_dir', type=str, required=True, help='Evaluation results directory')
     parser.add_argument('--output_dir', type=str, default=None, help='Output directory for plots')
+    parser.add_argument(
+        '--strict',
+        action='store_true',
+        help='Fail if no real evaluation results are found',
+    )
+    parser.add_argument(
+        '--expected_strategies',
+        type=str,
+        default='',
+        help='Comma-separated list of strategies that must be present in results',
+    )
     args = parser.parse_args()
 
     output_dir = args.output_dir or os.path.join(args.eval_dir, 'comparison')
@@ -376,20 +410,20 @@ def main():
     histories = load_training_histories(args.eval_dir)
 
     if not results:
-        print("No evaluation results found. Creating example plots with dummy data.")
-        # Generate example data for testing the plotting pipeline
-        for strat in ['rl_dqn', 'rl_ppo', 'rl_a2c_masked', 'rl_hybrid_hh', 'rl_pct_transformer',
-                       'walle_scoring', 'baseline', 'surface_contact']:
-            fill = np.random.uniform(0.55, 0.80)
-            results[strat] = {
-                'avg_fill': fill,
-                'fill_std': np.random.uniform(0.03, 0.08),
-                'placement_rate': np.random.uniform(0.7, 0.95),
-                'avg_pallets_closed': np.random.uniform(2, 8),
-                'ms_per_box': np.random.uniform(5, 100),
-                'support_mean': np.random.uniform(0.85, 0.99),
-                'fill_rates': list(np.random.normal(fill, 0.05, 100)),
-            }
+        msg = f"No evaluation results found in {args.eval_dir}"
+        if args.strict:
+            raise FileNotFoundError(msg)
+        print(msg)
+        return
+
+    expected = [x.strip() for x in args.expected_strategies.split(',') if x.strip()]
+    if args.strict and expected:
+        missing = [name for name in expected if name not in results]
+        if missing:
+            raise FileNotFoundError(
+                f"Missing evaluation results for expected strategies: {missing}. "
+                f"Found: {sorted(results.keys())}"
+            )
 
     print(f"\nGenerating plots for {len(results)} strategies...")
     print()

@@ -9,7 +9,7 @@ If you have never worked with RL or machine learning before, this guide is for y
 ## Table of Contents
 
 1. [What is Reinforcement Learning?](#1-what-is-reinforcement-learning)
-2. [Our 5 RL Strategies — Plain English](#2-our-5-rl-strategies--plain-english)
+2. [Our 6 RL Strategies — Plain English](#2-our-6-rl-strategies--plain-english)
 3. [Prerequisites — What You Need Installed](#3-prerequisites--what-you-need-installed)
 4. [Quick Start — Run Locally in 5 Minutes](#4-quick-start--run-locally-in-5-minutes)
 5. [Training on HPC — Complete Step-by-Step](#5-training-on-hpc--complete-step-by-step)
@@ -30,9 +30,9 @@ The key difference from traditional programming is that **we do not tell the age
 
 ---
 
-## 2. Our 5 RL Strategies -- Plain English
+## 2. Our 6 RL Strategies -- Plain English
 
-We have implemented five different RL approaches. Each one tackles the same problem (packing boxes onto pallets) but uses a different learning method. Think of them as five different types of employees, each with a different way of thinking about the same job.
+We have implemented six different RL approaches. Each one tackles the same problem (packing boxes onto pallets) but uses a different learning method. Think of them as six different types of employees, each with a different way of thinking about the same job.
 
 ### 2.1 rl_dqn — "The Memory-Based Worker"
 
@@ -73,6 +73,14 @@ We have implemented five different RL approaches. Each one tackles the same prob
 **How it works**: This strategy uses a "Transformer" neural network -- the same type of architecture that powers modern language models. First, a "candidate generator" produces 30-200 valid placement positions using corner points, extreme points, and floor scanning. Each candidate is described by 12 features (position, support, contact ratio, etc.). These candidates, plus information about the current box, are fed into a Transformer encoder that allows each candidate to "attend" to every other candidate. A "pointer decoder" then selects the single best candidate. This naturally handles the fact that different states have different numbers of valid placements.
 
 **Training time**: ~16 hours on a GPU.
+
+### 2.6 rl_mcts_hybrid — "The Planner with Lookahead"
+
+**Analogy**: Like a senior planner who does not only pick a good placement now, but also simulates what happens for the next few boxes before committing.
+
+**How it works**: This strategy combines a hierarchical policy (high-level box/bin choice + low-level candidate placement), a world-model auxiliary head, and optional MCTS-style lookahead. It is the most complex RL strategy in this codebase and is now prioritized first in the HPC pipeline. The training script includes robust resume (`--resume auto`), atomic checkpoint writes, and interruption-safe checkpoints for long-running jobs.
+
+**Training time**: ~24 hours on a GPU for a full production run.
 
 ---
 
@@ -248,14 +256,14 @@ If you see `ModuleNotFoundError`, make sure you are in the right directory. See 
 This is a very short training run just to verify everything works. A real training run uses 10,000-50,000 episodes, but 5 episodes takes under a minute:
 
 ```bash
-python strategies/rl_hybrid_hh/train.py --mode tabular --episodes 5 --output_dir outputs/rl_hybrid_hh_test
+python strategies/rl_hybrid_hh/train.py --mode tabular --episodes 5 --output-dir outputs/rl_hybrid_hh_test
 ```
 
 **What this command does**:
 - `python strategies/rl_hybrid_hh/train.py` -- runs the training script
 - `--mode tabular` -- uses the simple Q-table (fastest, no neural network)
 - `--episodes 5` -- only trains for 5 episodes (a real run would be 10,000+)
-- `--output_dir outputs/rl_hybrid_hh_test` -- saves results in this folder
+- `--output-dir outputs/rl_hybrid_hh_test` -- saves results in this folder
 
 **Expected output** (approximately):
 ```
@@ -282,7 +290,7 @@ The exact numbers will differ because training involves randomness, but you shou
 For a real training run that produces a useful model:
 
 ```bash
-python strategies/rl_hybrid_hh/train.py --mode dqn --episodes 10000 --output_dir outputs/rl_hybrid_hh_run1
+python strategies/rl_hybrid_hh/train.py --mode dqn --episodes 10000 --output-dir outputs/rl_hybrid_hh_run1
 ```
 
 This takes approximately 1-4 hours on a modern CPU. You will see progress updates printed every 100 episodes. You can safely stop it at any time with Ctrl+C -- the best checkpoint is saved periodically.
@@ -414,7 +422,7 @@ If you get `module: command not found`, your HPC might use a different module sy
 
 The HPC uses a "job scheduler" called SLURM to manage who gets to use which GPUs. You submit a "job" and SLURM runs it when a GPU becomes available.
 
-**To train all 5 strategies at once** (they run in parallel on different GPUs):
+**To run the full 6-strategy pipeline** (train + evaluate + visualize):
 
 ```bash
 cd /home/lstudent/bin_packing
@@ -424,39 +432,14 @@ sbatch strategies/rl_common/hpc/train_all.sh
 **Expected output**:
 ```
 ==================================================
-  RL Strategy Training Launcher
-  Strategies dir: /home/lstudent/bin_packing/strategies
-  Output dir:     /home/lstudent/bin_packing/outputs/rl_training/20260222_140000
-==================================================
-
--- rl_dqn --
-  Submitted: Job ID 12345
-
--- rl_ppo --
-  Submitted: Job ID 12346
-
--- rl_a2c_masked --
-  Submitted: Job ID 12347
-
--- rl_hybrid_hh --
-  Submitted: Job ID 12348
-
--- rl_pct_transformer --
-  Submitted: Job ID 12349
-
-==================================================
-  Submitted 5 SLURM jobs:
-    - Job 12345
-    - Job 12346
-    - Job 12347
-    - Job 12348
-    - Job 12349
-
-  Monitor: squeue -u $USER
-  Logs:    outputs/rl_training/20260222_140000/logs/
-  Cancel:  scancel 12345 12346 12347 12348 12349
+  RL Pipeline Launcher
+  Workflow dir: /home/lstudent/bin_packing
+  Python:       python
+  Args:         --mode full
 ==================================================
 ```
+
+This single entrypoint now prioritizes `rl_mcts_hybrid` first, then runs the remaining strategies across available GPUs, normalizes evaluation outputs, and generates comparison figures in `outputs/rl_training/<timestamp>/evaluation/comparison/`.
 
 **To train just one strategy** (e.g., rl_dqn only):
 
@@ -791,7 +774,7 @@ ls outputs/rl_pct_transformer/logs/best.pt
 **Fix**: If you are on your local machine and just want to run training locally:
 
 ```bash
-bash strategies/rl_common/hpc/train_all.sh --local
+bash strategies/rl_common/hpc/train_all.sh --mode full
 ```
 
 This runs all strategies sequentially on your local machine instead of submitting them to SLURM.
@@ -848,9 +831,9 @@ Do you have a GPU available?
                 |
                 +-- 12-24 hours --> Add rl_ppo (16h) or rl_pct_transformer (16h)
                 |
-                +-- 24+ hours --> Train all 5 strategies in parallel
+                +-- 24+ hours --> Run full 6-strategy pipeline
                 |
-                +-- Unlimited (HPC) --> Train all 5 with full hyperparameters
+                +-- Unlimited (HPC) --> Run full pipeline with full hyperparameters
 ```
 
 ### Recommended Training Order for Thesis
@@ -901,13 +884,13 @@ strategies/
 |   |                                         and generates matplotlib training curve plots
 |   |-- compare_strategies.py               Generates thesis-quality comparison plots across all
 |   |                                         strategies (bar charts, box plots, radar charts)
-|   |-- README.md                           Overview of all 5 RL strategies and shared architecture
+|   |-- README.md                           Overview of all 6 RL strategies and shared architecture
 |   |
 |   |-- hpc/                                HPC deployment scripts and configuration
 |       |-- requirements.txt                Python dependencies (torch, gymnasium, matplotlib, etc.)
 |       |-- setup_hpc.sh                    One-time script to create venv and install everything
-|       |-- train_all.sh                    Submits all 5 training jobs to SLURM in parallel
-|       |-- evaluate_all.sh                 Evaluates all trained models and generates comparison plots
+|       |-- train_all.sh                    One-command launcher (train + eval + visualize)
+|       |-- evaluate_all.sh                 Evaluates and visualizes an existing run directory
 |       |-- README.md                       HPC-specific quick-start guide
 |
 |-- rl_dqn/                                 Strategy 1: Double DQN with candidate-based action space
@@ -999,7 +982,7 @@ strategies/
 | Train rl_a2c_masked (GPU) | `python -m strategies.rl_a2c_masked.train --num_updates 200000 --num_envs 16` |
 | Train rl_pct_transformer (GPU) | `python -m strategies.rl_pct_transformer.train --episodes 200000 --num_envs 16` |
 | Train all on HPC | `sbatch strategies/rl_common/hpc/train_all.sh` |
-| Train all locally | `bash strategies/rl_common/hpc/train_all.sh --local` |
+| Run full pipeline locally | `bash strategies/rl_common/hpc/train_all.sh --mode full` |
 | Evaluate one strategy | `python strategies/rl_hybrid_hh/evaluate.py --checkpoint <path_to_best_model.pt>` |
 | Evaluate all strategies | `bash strategies/rl_common/hpc/evaluate_all.sh <training_output_dir>` |
 | Compare strategies (plots) | `python strategies/rl_common/compare_strategies.py --eval_dir <eval_dir>` |
