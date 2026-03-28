@@ -15,7 +15,8 @@ import sys
 import time
 import random
 import numpy as np
-from datetime import datetime
+from collections import defaultdict
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Any
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -84,9 +85,10 @@ BOTKO_BUFFER_SIZE = 8
 BOTKO_PICK_WINDOW = 4
 BOTKO_PALLET = BinConfig(
     length=1200.0, width=800.0, height=2700.0, resolution=10.0,
+    margin=20.0,  # 2cm gap between boxes and walls (per Botko BV spec)
 )
-MAX_CONSECUTIVE_REJECTS = 10
-PALLET_CLOSE_AFTER_REJECTS = 4  # Close pallet after 4 consecutive boxes can't fit
+MAX_CONSECUTIVE_REJECTS = 20  # Safety valve: session terminates if close logic is blocked (normal close at 8 rejects)
+PALLET_CLOSE_AFTER_REJECTS = 4  # Condition 1: lookahead trigger after 4 consecutive fails
 
 BOTKO_SESSION_CONFIG = SessionConfig(
     bin_config=BOTKO_PALLET,
@@ -95,7 +97,7 @@ BOTKO_SESSION_CONFIG = SessionConfig(
     pick_window=BOTKO_PICK_WINDOW,
     close_policy=FullestOnConsecutiveRejectsPolicy(
         max_consecutive=PALLET_CLOSE_AFTER_REJECTS,
-        min_fill_to_close=0.5  # Only close pallets that are at least 50% full
+        min_fill_to_close=0.40  # Close pallets at ≥40% fill (strategies cap at 41-47%)
     ),
     max_consecutive_rejects=MAX_CONSECUTIVE_REJECTS,
     enable_stability=False,
@@ -262,6 +264,27 @@ def send_telegram_sync(message: str):
         pass
 
 
+def _eta_str(seconds: float) -> str:
+    """Format seconds into a human-readable ETA string like '2h 14m' or '45m'."""
+    if seconds <= 0:
+        return "done"
+    td = timedelta(seconds=int(seconds))
+    h, rem = divmod(td.seconds, 3600)
+    h += td.days * 24
+    m = rem // 60
+    if h > 0:
+        return f"{h}h {m:02d}m"
+    return f"{m}m"
+
+
+def _pbar(done: int, total: int, width: int = 12) -> str:
+    """Return a compact text progress bar like [████████░░░░] 67%."""
+    pct = done / total if total > 0 else 1.0
+    filled = int(pct * width)
+    bar = "█" * filled + "░" * (width - filled)
+    return f"[{bar}] {pct:.0%}"
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────────────────────────────────────
@@ -275,15 +298,29 @@ def main():
     parser.add_argument("--shuffles", type=int, help="Override number of shuffled sequences per dataset")
     parser.add_argument("--boxes", type=int, help="Override number of boxes per dataset")
     parser.add_argument("--phase1-only", action="store_true", help="Run only Phase 1 baseline (skip Phase 2)")
+    parser.add_argument("--skip-phase1", action="store_true", help="Skip Phase 1, load baseline from --phase1-from and go straight to Phase 2")
+    parser.add_argument("--phase1-from", type=str, help="Path to existing results.json with Phase 1 data (required with --skip-phase1)")
     parser.add_argument("--resume", type=str, help="Path to a previous results.json to resume from")
     parser.add_argument("--no-telegram", action="store_true", help="Disable Telegram notifications")
+    parser.add_argument("--strategies", type=str, default=None,
+                        help="Comma-separated list of strategies to run (e.g. gravity_balanced,extreme_points). "
+                             "If set, only these strategies are included in Phase 1.")
+    parser.add_argument("--cpu-fraction", type=float, default=None,
+                        help="Fraction of available CPUs to use (0-1). Overrides default 0.75")
+    parser.add_argument("--seed-base", type=int, default=42,
+                        help="Base seed for dataset generation (changes datasets when different)")
     args = parser.parse_args()
 
     smoketest = args.smoke_test
     demorun = args.demo
     quickrun = args.quick
     phase1_only = args.phase1_only
+    skip_phase1 = args.skip_phase1
     use_telegram = not args.no_telegram
+
+    if skip_phase1 and not args.phase1_from:
+        print("ERROR: --skip-phase1 requires --phase1-from <path/to/results.json>")
+        sys.exit(1)
 
     import warnings
     warnings.filterwarnings("ignore")
@@ -346,14 +383,16 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(os.path.join(out_dir, "gifs"), exist_ok=True)
 
-    # RASPBERRY PI: Use 50% of CPUs (2 cores on Pi 4)
-    num_cpus = max(1, int(multiprocessing.cpu_count() * 0.50))
+    # CPU fraction: default 75% (Raspberry Pi optimization) but overridable via --cpu-fraction
+    cpu_frac = args.cpu_fraction if args.cpu_fraction is not None else 0.75
+    cpu_frac = max(0.01, min(1.0, float(cpu_frac)))
+    num_cpus = max(1, int(multiprocessing.cpu_count() * cpu_frac))
 
-    # Set process priority to be nice to other processes
-    # nice value: 10 = lower priority, yields CPU when others need it
+    # Set process priority so other processes preempt us if needed
+    # nice value: 15 = below-normal priority, OS scheduler will prefer other processes
     try:
-        os.nice(10)
-        print(f"  Process nice level set to 10 (background priority)")
+        os.nice(15)
+        print(f"  Process nice level set to 15 (yields to other processes automatically)")
     except (OSError, AttributeError) as e:
         print(f"  Warning: Could not set nice level: {e}")
 
@@ -369,9 +408,18 @@ def main():
             pass  # Not all systems support this
 
     # ── Strategy lists ─────────────────────────────────────────────────────
-    # Exclude only strategies that need training
+    # Exclude strategies that need training (RL) or are learning-based
     EXCLUDED_STRATEGIES = [
         "selective_hyper_heuristic",    # Learning-based - needs training
+        "rl_dqn",                       # RL - needs trained neural network weights
+        "rl_hybrid_hh",                 # RL - needs trained weights
+        "rl_mcts_hybrid",               # RL - MCTS hybrid needs training
+        "rl_a2c_masked",                # RL - needs trained weights
+        "rl_pct_transformer",           # RL - transformer needs training
+        "rl_ppo",                       # RL - PPO needs trained weights
+    ]
+    EXCLUDED_MULTIBIN_STRATEGIES = [
+        "rl_mcts_hybrid_multibin",      # RL multibin - needs trained weights
     ]
 
     # Slow strategies - run LAST (11-12 min per experiment, acceptable for 2-day run)
@@ -382,9 +430,9 @@ def main():
 
     if smoketest:
         singlebin_strategies = ["surface_contact", "walle_scoring", "baseline"]
-        multibin_strategies = list(MULTIBIN_STRATEGY_REGISTRY.keys())[:1]
+        multibin_strategies = [s for s in MULTIBIN_STRATEGY_REGISTRY.keys() if s not in EXCLUDED_MULTIBIN_STRATEGIES][:1]
     else:
-        # Get all strategies except excluded
+        # Get all non-RL, non-excluded strategies
         all_single = [s for s in STRATEGY_REGISTRY.keys() if s not in EXCLUDED_STRATEGIES]
 
         # Separate fast and slow strategies
@@ -393,14 +441,20 @@ def main():
 
         # Fast strategies first, slow strategies last
         singlebin_strategies = fast_strategies + slow_strategies
-        multibin_strategies = list(MULTIBIN_STRATEGY_REGISTRY.keys())
+        multibin_strategies = [s for s in MULTIBIN_STRATEGY_REGISTRY.keys() if s not in EXCLUDED_MULTIBIN_STRATEGIES]
+
+    # Optional: restrict to a specific subset of strategies (--strategies flag)
+    if args.strategies:
+        target = [s.strip() for s in args.strategies.split(",") if s.strip()]
+        singlebin_strategies = [s for s in singlebin_strategies if s in target]
+        multibin_strategies  = [s for s in multibin_strategies  if s in target]
 
     all_strategy_names = singlebin_strategies + multibin_strategies
 
     print(f"\n{'='*75}")
     print(f"  BOTKO BV OVERNIGHT SWEEP -- {'SMOKE TEST' if smoketest else 'FULL RUN'}")
     print(f"{'='*75}")
-    print(f"  CPUs:        {num_cpus} ({50}% for Raspberry Pi)")
+    print(f"  CPUs:        {num_cpus} ({cpu_frac:.0%} of detected CPUs, nice 15 — yields to other processes)")
     print(f"  Output:      {out_dir}")
     print(f"  Datasets:    {n_datasets} x {n_boxes} Rajapack boxes, {n_shuffles} shuffles")
     print(f"  Single-bin:  {len(singlebin_strategies)} strategies")
@@ -410,7 +464,8 @@ def main():
     print(f"  Close:       {BOTKO_SESSION_CONFIG.close_policy.describe()}")
     print(f"  Reject:      FIFO advance, front box exits (max {MAX_CONSECUTIVE_REJECTS} consecutive)")
     print(f"  Stats:       only closed pallets count in avg fill rate")
-    print(f"  Phase mode:  {'PHASE 1 ONLY' if phase1_only else 'PHASE 1 + PHASE 2'}")
+    phase_mode_str = "PHASE 1 ONLY" if phase1_only else ("SKIP PHASE 1 → PHASE 2 ONLY" if skip_phase1 else "PHASE 1 + PHASE 2")
+    print(f"  Phase mode:  {phase_mode_str}")
     print(f"  Telegram:    {'ENABLED' if use_telegram else 'DISABLED'}")
 
     # Telegram: Experiment start
@@ -421,20 +476,21 @@ def main():
             f"Phase mode: {'Phase 1 only' if phase1_only else 'Phase 1 + Phase 2'}\n"
             f"Datasets: {n_datasets} × {n_boxes} boxes × {n_shuffles} shuffles\n"
             f"Strategies: {len(all_strategy_names)} total\n"
-            f"CPUs: {num_cpus}/4 (50%)\n"
+            f"CPUs: {num_cpus}/4 (75%, nice 15)\n"
             f"Output: {os.path.basename(out_dir)}"
         )
         send_telegram_sync(msg)
 
     # ── Generate datasets ──────────────────────────────────────────────────
-    print(f"\n  Generating {n_datasets} datasets...")
+    seed_base = int(args.seed_base)
+    print(f"\n  Generating {n_datasets} datasets (seed base={seed_base})...")
     datasets = []
     for d in range(n_datasets):
-        ds_boxes = generate_rajapack(n_boxes, seed=42 + d)
+        ds_boxes = generate_rajapack(n_boxes, seed=seed_base + d)
         shuffles = []
         for s in range(n_shuffles):
             shuffled = list(ds_boxes)
-            random.Random(1000 * d + s + 100).shuffle(shuffled)
+            random.Random(1000 * (seed_base + d) + s + 100).shuffle(shuffled)
             shuffles.append(shuffled)
         datasets.append({
             "dataset_id": d,
@@ -442,140 +498,210 @@ def main():
             "original_boxes": ds_boxes,
         })
 
-    # ── Phase 1: Baseline ──────────────────────────────────────────────────
-    completed_phase1 = set()
-    for r in final_output.get("phase1_baseline", []):
-        completed_phase1.add((r["dataset_id"], r["shuffle_id"], r["strategy"]))
+    # ── Phase 1: Baseline (or skip) ────────────────────────────────────────
+    elapsed1 = 0.0
 
-    print(f"\n[PHASE 1] Baseline: all strategies with default selectors")
-    if use_telegram:
-        fast_count = len([s for s in singlebin_strategies if s not in SLOW_STRATEGIES])
-        slow_count = len([s for s in singlebin_strategies if s in SLOW_STRATEGIES])
-        total_experiments = (len(singlebin_strategies) + len(multibin_strategies)) * n_datasets * n_shuffles
-        send_telegram_sync(
-            f"🚀 DEMO RUN STARTING\n"
-            f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"📊 Phase 1: Baseline Testing\n"
-            f"  Fast strategies: {fast_count}\n"
-            f"  Slow strategies: {slow_count} (run last)\n"
-            f"  Multi-bin: {len(multibin_strategies)}\n"
-            f"  Datasets: {n_datasets}\n"
-            f"  Shuffles per dataset: {n_shuffles}\n"
-            f"  Total experiments: {total_experiments}\n"
-            f"\n⏱ Estimated time: ~8-9 hours\n"
-            f"📈 Updates every 5%"
-        )
+    if skip_phase1:
+        # Load Phase 1 results from an existing run, jump straight to Phase 2
+        print(f"\n[PHASE 1] SKIPPED — loading baseline from {args.phase1_from}")
+        with open(args.phase1_from, 'r') as f:
+            p1_data = json.load(f)
+        final_output["phase1_baseline"] = p1_data.get("phase1_baseline", [])
+        final_output["metadata"]["top_5"] = p1_data["metadata"].get("top_5", [])
+        final_output["metadata"]["phase1_elapsed_s"] = p1_data["metadata"].get("phase1_elapsed_s", 0.0)
+        print(f"  Loaded {len(final_output['phase1_baseline'])} Phase 1 results")
+        print(f"  Top 5 from loaded data: {final_output['metadata']['top_5']}")
+        if use_telegram:
+            send_telegram_sync(
+                f"⏭️ Phase 1 SKIPPED\n"
+                f"Loaded {len(final_output['phase1_baseline'])} results from existing run\n"
+                f"Top 5: {', '.join(final_output['metadata']['top_5'])}\n"
+                f"Going straight to Phase 2 sweep..."
+            )
+        save_progress(out_dir, final_output)
 
-    tasks = []
-    for d_idx, ds in enumerate(datasets):
-        for s_idx, boxes_shuffled in enumerate(ds["shuffles"]):
-            for strat in singlebin_strategies:
-                if (d_idx, s_idx, strat) in completed_phase1:
-                    continue
-                tasks.append({
-                    "strategy_type": "single_bin",
-                    "dataset_id": d_idx,
-                    "shuffle_id": s_idx,
-                    "strategy_name": strat,
-                    "box_selector": "default",
-                    "bin_selector": "emptiest_first",
-                    "boxes": boxes_shuffled,
-                    "generate_gifs": False,
-                })
-            for strat in multibin_strategies:
-                if (d_idx, s_idx, strat) in completed_phase1:
-                    continue
-                tasks.append({
-                    "strategy_type": "multi_bin",
-                    "dataset_id": d_idx,
-                    "shuffle_id": s_idx,
-                    "strategy_name": strat,
-                    "boxes": boxes_shuffled,
-                    "generate_gifs": False,
-                })
+    else:
+        completed_phase1 = set()
+        for r in final_output.get("phase1_baseline", []):
+            completed_phase1.add((r["dataset_id"], r["shuffle_id"], r["strategy"]))
 
-    print(f"  Enqueuing {len(tasks)} tasks...")
-    t0 = time.perf_counter()
-    with ProcessPoolExecutor(max_workers=num_cpus) as executor:
-        futures = {executor.submit(process_chunk, t): t for t in tasks}
-        completed = 0
-        last_telegram_pct = 0
-        slow_zone_notified = False  # Track if we've notified about slow strategies
+        print(f"\n[PHASE 1] Baseline: all strategies with default selectors")
+        if use_telegram:
+            fast_count = len([s for s in singlebin_strategies if s not in SLOW_STRATEGIES])
+            slow_count = len([s for s in singlebin_strategies if s in SLOW_STRATEGIES])
+            total_experiments = (len(singlebin_strategies) + len(multibin_strategies)) * n_datasets * n_shuffles
+            send_telegram_sync(
+                f"🚀 BOTKO SWEEP STARTING\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"📊 Phase 1: Baseline Testing\n"
+                f"  Fast strategies: {fast_count}\n"
+                f"  Slow strategies: {slow_count} (run last)\n"
+                f"  Multi-bin: {len(multibin_strategies)}\n"
+                f"  Datasets: {n_datasets} × {n_shuffles} shuffles\n"
+                f"  Total experiments: {total_experiments}\n"
+                f"\n⏱ Estimated time: ~8-9 hours\n"
+                f"📈 Updates every 5%"
+            )
 
-        for future in as_completed(futures):
-            res = future.result()
-            if res["success"]:
-                entry = res["summary"].copy()
-                entry["dataset_id"] = res["args_echo"]["dataset_id"]
-                entry["shuffle_id"] = res["args_echo"]["shuffle_id"]
-                final_output["phase1_baseline"].append(entry)
-            else:
-                strat_name = res["args_echo"].get("strategy_name", "?")
-                print(f"    FAIL [{strat_name}]: {res.get('error', '?')[:80]}")
+        tasks = []
+        for d_idx, ds in enumerate(datasets):
+            for s_idx, boxes_shuffled in enumerate(ds["shuffles"]):
+                for strat in singlebin_strategies:
+                    if (d_idx, s_idx, strat) in completed_phase1:
+                        continue
+                    tasks.append({
+                        "strategy_type": "single_bin",
+                        "dataset_id": d_idx,
+                        "shuffle_id": s_idx,
+                        "strategy_name": strat,
+                        "box_selector": "default",
+                        "bin_selector": "focus_fill",
+                        "boxes": boxes_shuffled,
+                        "generate_gifs": False,
+                    })
+                for strat in multibin_strategies:
+                    if (d_idx, s_idx, strat) in completed_phase1:
+                        continue
+                    tasks.append({
+                        "strategy_type": "multi_bin",
+                        "dataset_id": d_idx,
+                        "shuffle_id": s_idx,
+                        "strategy_name": strat,
+                        "boxes": boxes_shuffled,
+                        "generate_gifs": False,
+                    })
 
-            completed += 1
-            current_pct = int((completed / len(tasks)) * 100)
-            elapsed = time.perf_counter() - t0
-            rate = completed / elapsed if elapsed > 0 else 0
-            remaining_tasks = len(tasks) - completed
-            eta_seconds = remaining_tasks / rate if rate > 0 else 0
+        # How many runs we expect per strategy (for per-strategy completion detection)
+        runs_per_strategy = n_datasets * n_shuffles
+        strat_results_p1: Dict[str, list] = defaultdict(list)
+        strat_notified_p1: set = set()
+        HEARTBEAT_SECS = 1800  # 30-minute heartbeat if nothing else fires
 
-            # Save progress every ~5%
-            if len(tasks) > 0 and (completed % max(1, len(tasks) // 20) == 0 or completed == len(tasks)):
-                print(f"    {completed}/{len(tasks)} ({current_pct}%) - ETA: {eta_seconds/60:.1f}m")
-                save_progress(out_dir, final_output)
+        print(f"  Enqueuing {len(tasks)} tasks...")
+        t0 = time.perf_counter()
+        last_notification_time = t0
 
-                # Check if we just entered slow strategies zone
-                recent_strategies = [r.get("strategy", "") for r in final_output["phase1_baseline"][-5:]]
-                in_slow_zone = any(s in ["lookahead", "hybrid_adaptive"] for s in recent_strategies)
+        with ProcessPoolExecutor(max_workers=num_cpus) as executor:
+            futures = {executor.submit(process_chunk, t): t for t in tasks}
+            completed = 0
+            last_telegram_pct = 0
+            slow_zone_notified = False
 
-                # Send notification when entering slow zone
-                if use_telegram and in_slow_zone and not slow_zone_notified:
-                    slow_zone_notified = True
+            for future in as_completed(futures):
+                res = future.result()
+                if res["success"]:
+                    entry = res["summary"].copy()
+                    entry["dataset_id"] = res["args_echo"]["dataset_id"]
+                    entry["shuffle_id"] = res["args_echo"]["shuffle_id"]
+                    final_output["phase1_baseline"].append(entry)
+                    strat_results_p1[entry["strategy"]].append(entry)
+                else:
+                    strat_name = res["args_echo"].get("strategy_name", "?")
+                    print(f"    FAIL [{strat_name}]: {res.get('error', '?')[:80]}")
+                    if use_telegram:
+                        send_telegram_sync(
+                            f"⚠️ Experiment failed\n"
+                            f"Strategy: {strat_name}\n"
+                            f"Error: {res.get('error', '?')[:120]}"
+                        )
+                        last_notification_time = time.perf_counter()
+
+                completed += 1
+                current_pct = int((completed / len(tasks)) * 100)
+                now = time.perf_counter()
+                elapsed = now - t0
+                rate = completed / elapsed if elapsed > 0 else 0
+                remaining_tasks = len(tasks) - completed
+                eta_seconds = remaining_tasks / rate if rate > 0 else 0
+
+                # ── Per-strategy completion notification ──────────────────
+                if use_telegram and res["success"]:
+                    sname = entry["strategy"]
+                    done_runs = len(strat_results_p1[sname])
+                    if sname not in strat_notified_p1 and done_runs >= runs_per_strategy:
+                        strat_notified_p1.add(sname)
+                        s_fills = [r.get("avg_closed_fill", 0) for r in strat_results_p1[sname]]
+                        s_placed = [r.get("total_placed", 0) for r in strat_results_p1[sname]]
+                        s_pals = [r.get("pallets_closed", 0) for r in strat_results_p1[sname]]
+                        is_slow = sname in SLOW_STRATEGIES
+                        tag = "🐌" if is_slow else "✓"
+                        send_telegram_sync(
+                            f"{tag} {sname}\n"
+                            f"━━━━━━━━━━━━━━━━━━━━\n"
+                            f"Avg fill:   {np.mean(s_fills):.1%}  (best {max(s_fills):.1%})\n"
+                            f"Placed:     {np.mean(s_placed):.0f} boxes avg\n"
+                            f"Pallets:    {np.mean(s_pals):.1f} avg closed\n"
+                            f"Runs:       {done_runs}/{runs_per_strategy}\n"
+                            f"\n"
+                            f"Overall {_pbar(completed, len(tasks))}\n"
+                            f"ETA: {_eta_str(eta_seconds)}"
+                        )
+                        last_notification_time = now
+
+                # ── Save + console print every ~5% ────────────────────────
+                if len(tasks) > 0 and (completed % max(1, len(tasks) // 20) == 0 or completed == len(tasks)):
+                    print(f"    {completed}/{len(tasks)} ({current_pct}%) - ETA: {_eta_str(eta_seconds)}")
+                    save_progress(out_dir, final_output)
+
+                    recent_strategies = [r.get("strategy", "") for r in final_output["phase1_baseline"][-5:]]
+                    in_slow_zone = any(s in SLOW_STRATEGIES for s in recent_strategies)
+
+                    if use_telegram and in_slow_zone and not slow_zone_notified:
+                        slow_zone_notified = True
+                        send_telegram_sync(
+                            f"🐌 Entering slow strategies\n"
+                            f"━━━━━━━━━━━━━━━━━━━━\n"
+                            f"Now testing: lookahead & hybrid_adaptive\n"
+                            f"~10-12 min per experiment\n"
+                            f"{_pbar(completed, len(tasks))} ETA {_eta_str(eta_seconds)}"
+                        )
+                        last_notification_time = now
+
+                    if use_telegram and (current_pct - last_telegram_pct >= 10 or completed == len(tasks)):
+                        avg_fill = np.mean([r.get("avg_closed_fill", 0) for r in final_output["phase1_baseline"][-50:]]) if final_output["phase1_baseline"] else 0
+                        total_closed = sum(r.get("pallets_closed", 0) for r in final_output["phase1_baseline"])
+                        strats_done = len(strat_notified_p1)
+                        total_strats = len(all_strategy_names)
+                        send_telegram_sync(
+                            f"📈 Phase 1 — {current_pct}%\n"
+                            f"━━━━━━━━━━━━━━━━━━━━\n"
+                            f"{_pbar(completed, len(tasks))}\n"
+                            f"Experiments: {completed}/{len(tasks)}\n"
+                            f"Strategies done: {strats_done}/{total_strats}\n"
+                            f"Pallets closed: {total_closed}\n"
+                            f"Recent avg fill: {avg_fill:.1%}\n"
+                            f"Rate: {rate * 3600:.0f} exp/hr\n"
+                            f"ETA: {_eta_str(eta_seconds)}"
+                        )
+                        last_telegram_pct = current_pct
+                        last_notification_time = now
+
+                # ── Heartbeat: send if 30 min of silence ──────────────────
+                if use_telegram and (now - last_notification_time) >= HEARTBEAT_SECS:
                     send_telegram_sync(
-                        f"🐌 ENTERING SLOW STRATEGIES ZONE\n"
-                        f"━━━━━━━━━━━━━━━━━━━━\n"
-                        f"Now testing: lookahead & hybrid_adaptive\n"
-                        f"These take 10-12 min per experiment\n"
-                        f"(vs 7 min for fast strategies)\n"
-                        f"Progress: {completed}/{len(tasks)}\n"
-                        f"ETA: {eta_seconds/60:.1f}m"
+                        f"💓 Still running — Phase 1\n"
+                        f"{_pbar(completed, len(tasks))}\n"
+                        f"Experiments: {completed}/{len(tasks)}\n"
+                        f"ETA: {_eta_str(eta_seconds)}"
                     )
+                    last_notification_time = now
 
-                # Telegram updates every 5% for frequent updates
-                if use_telegram and (current_pct - last_telegram_pct >= 5 or completed == len(tasks)):
-                    avg_fill = np.mean([r.get("avg_closed_fill", 0) for r in final_output["phase1_baseline"][-50:]]) if final_output["phase1_baseline"] else 0
-                    total_closed = sum(r.get("pallets_closed", 0) for r in final_output["phase1_baseline"])
+        elapsed1 = time.perf_counter() - t0
+        print(f"  Phase 1 completed in {elapsed1:.1f}s.")
+        save_progress(out_dir, final_output)
 
-                    zone_indicator = "🐌 SLOW STRATEGIES" if in_slow_zone else "⚡ Fast strategies"
-
-                    send_telegram_sync(
-                        f"📈 Phase 1: {current_pct}%\n"
-                        f"Progress: {completed}/{len(tasks)} experiments\n"
-                        f"Zone: {zone_indicator}\n"
-                        f"Elapsed: {elapsed/60:.1f}m | ETA: {eta_seconds/60:.1f}m\n"
-                        f"Pallets closed: {total_closed}\n"
-                        f"Avg fill: {avg_fill:.1%}\n"
-                        f"Rate: {rate*60:.1f} exp/hour"
-                    )
-                    last_telegram_pct = current_pct
-
-    elapsed1 = time.perf_counter() - t0
-    print(f"  Phase 1 completed in {elapsed1:.1f}s.")
-    save_progress(out_dir, final_output)
-
-    # Send Phase 1 completion notification
-    if use_telegram:
-        total_closed_p1 = sum(r.get("pallets_closed", 0) for r in final_output["phase1_baseline"])
-        avg_fill_p1 = np.mean([r.get("avg_closed_fill", 0) for r in final_output["phase1_baseline"]]) if final_output["phase1_baseline"] else 0
-        send_telegram_sync(
-            f"✅ Phase 1 COMPLETE!\n"
-            f"Time: {elapsed1/60:.1f} min ({elapsed1/3600:.1f} hours)\n"
-            f"Experiments: {len(final_output['phase1_baseline'])}\n"
-            f"Total pallets closed: {total_closed_p1}\n"
-            f"Overall avg fill: {avg_fill_p1:.1%}\n"
-            + ("Now starting Phase 2..." if not phase1_only else "Run finished (Phase 1 only).")
-        )
+        if use_telegram:
+            total_closed_p1 = sum(r.get("pallets_closed", 0) for r in final_output["phase1_baseline"])
+            avg_fill_p1 = np.mean([r.get("avg_closed_fill", 0) for r in final_output["phase1_baseline"]]) if final_output["phase1_baseline"] else 0
+            send_telegram_sync(
+                f"✅ Phase 1 complete!\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"Time:        {_eta_str(elapsed1)} ({elapsed1/3600:.1f}h)\n"
+                f"Experiments: {len(final_output['phase1_baseline'])}\n"
+                f"Pallets:     {total_closed_p1} closed\n"
+                f"Avg fill:    {avg_fill_p1:.1%}\n"
+                f"\n{'⏩ Starting Phase 2 sweep...' if not phase1_only else '🏁 Run finished (Phase 1 only).'}"
+            )
 
     # ── Aggregate Phase 1 to find top-5 ────────────────────────────────────
     strat_scores: Dict[str, List[float]] = {s: [] for s in all_strategy_names}
@@ -670,12 +796,17 @@ def main():
         print(f"  Note: multi-bin strategies use native routing (no sweep)")
 
     if use_telegram:
+        sel_combos = len(box_selectors) * len(bin_selectors)
+        total_p2_exp = len(sweep_strategies) * sel_combos * runs_per_sweep
         send_telegram_sync(
-            f"📊 Phase 2 Starting: Bin/Box Selector Sweep\n"
-            f"Top {len(sweep_strategies)} strategies\n"
-            f"Box selectors: {len(box_selectors)}\n"
-            f"Bin selectors: {len(bin_selectors)}\n"
-            f"Variations: {runs_per_sweep} datasets"
+            f"🔬 Phase 2 — Selector Sweep\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"Top strategies: {', '.join(sweep_strategies)}\n"
+            f"Box selectors:  {', '.join(box_selectors)}\n"
+            f"Bin selectors:  {', '.join(bin_selectors)}\n"
+            f"Combos/strategy: {sel_combos}\n"
+            f"Total runs:     ~{total_p2_exp}\n"
+            f"Datasets/combo: {runs_per_sweep}"
         )
 
     completed_phase2 = set()
@@ -710,6 +841,10 @@ def main():
     print(f"  Enqueuing {len(phase2_tasks)} tasks...")
     save_progress(out_dir, final_output)
 
+    # Track best combo seen so far in Phase 2
+    combo_scores: Dict[str, list] = defaultdict(list)  # "strat|box|bin" -> list of placement rates
+    last_notification_time_p2 = time.perf_counter()
+
     t2 = time.perf_counter()
     with ProcessPoolExecutor(max_workers=num_cpus) as executor:
         futures = {executor.submit(run_singlebin_experiment, t): t for t in phase2_tasks}
@@ -723,58 +858,89 @@ def main():
                 entry["dataset_id"] = res["args_echo"]["dataset_id"]
                 entry["shuffle_id"] = res["args_echo"]["shuffle_id"]
                 final_output["phase2_sweep"].append(entry)
+                combo_key = f"{entry['strategy']}|{entry.get('box_selector','?')}|{entry.get('bin_selector','?')}"
+                combo_scores[combo_key].append(entry.get("placement_rate", entry.get("avg_closed_fill", 0)))
             else:
                 print(f"    FAIL: {res.get('error', '?')[:80]}")
+                if use_telegram:
+                    ae = res.get("args_echo", {})
+                    send_telegram_sync(
+                        f"⚠️ Phase 2 experiment failed\n"
+                        f"Strategy: {ae.get('strategy_name','?')}\n"
+                        f"Box sel: {ae.get('box_selector','?')} | Bin sel: {ae.get('bin_selector','?')}\n"
+                        f"Error: {res.get('error','?')[:100]}"
+                    )
+                    last_notification_time_p2 = time.perf_counter()
 
             completed += 1
             current_pct = int((completed / len(phase2_tasks)) * 100) if phase2_tasks else 100
-            elapsed2 = time.perf_counter() - t2
+            now2 = time.perf_counter()
+            elapsed2 = now2 - t2
             rate2 = completed / elapsed2 if elapsed2 > 0 else 0
             remaining2 = len(phase2_tasks) - completed
             eta2_seconds = remaining2 / rate2 if rate2 > 0 else 0
 
             if len(phase2_tasks) > 0 and (completed % max(1, len(phase2_tasks) // 10) == 0 or completed == len(phase2_tasks)):
-                print(f"    {completed}/{len(phase2_tasks)} ({current_pct}%) - ETA: {eta2_seconds/60:.1f}m")
+                print(f"    {completed}/{len(phase2_tasks)} ({current_pct}%) - ETA: {_eta_str(eta2_seconds)}")
                 save_progress(out_dir, final_output)
 
-                # Telegram updates every 5% for frequent updates
-                if use_telegram and (current_pct - last_telegram_pct >= 5 or completed == len(phase2_tasks)):
-                    total_closed_p2 = sum(r.get("pallets_closed", 0) for r in final_output["phase2_sweep"])
-                    avg_fill_p2 = np.mean([r.get("avg_closed_fill", 0) for r in final_output["phase2_sweep"][-20:]]) if final_output["phase2_sweep"] else 0
+                if use_telegram and (current_pct - last_telegram_pct >= 10 or completed == len(phase2_tasks)):
+                    # Compute best combo so far
+                    best_combo_key = max(combo_scores, key=lambda k: np.mean(combo_scores[k])) if combo_scores else "—"
+                    best_combo_score = np.mean(combo_scores[best_combo_key]) if combo_scores else 0.0
+                    best_strat, best_box, best_bin = (best_combo_key.split("|") + ["?", "?", "?"])[:3]
 
-                    # Show current configuration being tested
                     recent = final_output["phase2_sweep"][-1] if final_output["phase2_sweep"] else {}
-                    current_strat = recent.get("strategy", "?")
-                    current_box_sel = recent.get("box_selector", "?")
-                    current_bin_sel = recent.get("bin_selector", "?")
-
                     send_telegram_sync(
-                        f"📊 Phase 2: {current_pct}%\n"
-                        f"Progress: {completed}/{len(phase2_tasks)} configs\n"
-                        f"Testing: {current_strat}\n"
-                        f"  Box sel: {current_box_sel}\n"
-                        f"  Bin sel: {current_bin_sel}\n"
-                        f"Elapsed: {elapsed2/60:.1f}m | ETA: {eta2_seconds/60:.1f}m\n"
-                        f"Pallets: {total_closed_p2} | Avg fill: {avg_fill_p2:.1%}\n"
-                        f"Rate: {rate2*60:.1f} exp/hour"
+                        f"📊 Phase 2 — {current_pct}%\n"
+                        f"━━━━━━━━━━━━━━━━━━━━\n"
+                        f"{_pbar(completed, len(phase2_tasks))}\n"
+                        f"Configs: {completed}/{len(phase2_tasks)}\n"
+                        f"Testing now:\n"
+                        f"  {recent.get('strategy','?')} | {recent.get('box_selector','?')} | {recent.get('bin_selector','?')}\n"
+                        f"\n🏆 Best so far:\n"
+                        f"  {best_strat}\n"
+                        f"  box={best_box} | bin={best_bin}\n"
+                        f"  Score: {best_combo_score:.1%}\n"
+                        f"\nETA: {_eta_str(eta2_seconds)}"
                     )
                     last_telegram_pct = current_pct
+                    last_notification_time_p2 = now2
+
+            # Heartbeat for Phase 2
+            if use_telegram and (now2 - last_notification_time_p2) >= HEARTBEAT_SECS:
+                send_telegram_sync(
+                    f"💓 Still running — Phase 2\n"
+                    f"{_pbar(completed, len(phase2_tasks))}\n"
+                    f"Configs: {completed}/{len(phase2_tasks)}\n"
+                    f"ETA: {_eta_str(eta2_seconds)}"
+                )
+                last_notification_time_p2 = now2
 
     elapsed2 = time.perf_counter() - t2
     print(f"  Phase 2 completed in {elapsed2:.1f}s.")
     save_progress(out_dir, final_output)
 
-    # Send Phase 2 completion notification
+    # Phase 2 completion — show best combo found
     if use_telegram:
         total_closed_p2 = sum(r.get("pallets_closed", 0) for r in final_output["phase2_sweep"])
         avg_fill_p2 = np.mean([r.get("avg_closed_fill", 0) for r in final_output["phase2_sweep"]]) if final_output["phase2_sweep"] else 0
+        # Best combo
+        if combo_scores:
+            best_k = max(combo_scores, key=lambda k: np.mean(combo_scores[k]))
+            b_strat, b_box, b_bin = (best_k.split("|") + ["?", "?", "?"])[:3]
+            b_score = np.mean(combo_scores[best_k])
+            best_line = f"🥇 {b_strat}\n   box={b_box} | bin={b_bin}\n   Score: {b_score:.1%}"
+        else:
+            best_line = "—"
         send_telegram_sync(
-            f"✅ Phase 2 COMPLETE!\n"
-            f"Time: {elapsed2/60:.1f} min ({elapsed2/3600:.1f} hours)\n"
-            f"Configurations tested: {len(final_output['phase2_sweep'])}\n"
-            f"Pallets closed: {total_closed_p2}\n"
-            f"Avg fill: {avg_fill_p2:.1%}\n"
-            f"Preparing final summary..."
+            f"✅ Phase 2 complete!\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"Time:    {_eta_str(elapsed2)} ({elapsed2/3600:.1f}h)\n"
+            f"Configs: {len(final_output['phase2_sweep'])}\n"
+            f"Pallets: {total_closed_p2} | Avg fill: {avg_fill_p2:.1%}\n"
+            f"\nBest configuration:\n{best_line}\n"
+            f"\nBuilding final summary..."
         )
 
     total_elapsed = elapsed1 + elapsed2
@@ -795,30 +961,40 @@ def main():
         total_closed_p2 = sum(r.get("pallets_closed", 0) for r in final_output.get("phase2_sweep", []))
         avg_fill_all = np.mean([r.get("avg_closed_fill", 0) for r in final_output["phase1_baseline"]]) if final_output["phase1_baseline"] else 0
 
-        # Build top 5 summary
-        top_5_summary = "\n".join([
-            f"  {i+1}. {s} ({score:.1%})"
+        # Top 5 phase 1 rankings
+        top_5_lines = "\n".join([
+            f"  {'🥇🥈🥉  5️⃣ 6️⃣'.split()[i] if i < 3 else str(i+1)+'.'} {s} — {score:.1%}"
             for i, (s, score, _, _) in enumerate(avg_scores[:5])
         ])
 
+        # Best phase 2 combo
+        if combo_scores:
+            best_k = max(combo_scores, key=lambda k: np.mean(combo_scores[k]))
+            b_strat, b_box, b_bin = (best_k.split("|") + ["?", "?", "?"])[:3]
+            b_score = np.mean(combo_scores[best_k])
+            best_p2_line = f"  {b_strat}\n  box={b_box} | bin={b_bin} — {b_score:.1%}"
+        else:
+            best_p2_line = "  —"
+
+        total_experiments = len(final_output['phase1_baseline']) + len(final_output.get('phase2_sweep', []))
+        strats_tested = len({r['strategy'] for r in final_output['phase1_baseline']})
+
         send_telegram_sync(
-            f"🎉 BOTKO DEMO COMPLETE!\n"
+            f"🎉 BOTKO SWEEP COMPLETE\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"⏱ Total Runtime: {total_elapsed/60:.1f} min ({total_elapsed/3600:.1f} hours)\n"
-            f"  Phase 1: {elapsed1/60:.1f} min\n"
-            f"  Phase 2: {elapsed2/60:.1f} min\n"
-            f"\n🏆 Top 5 Strategies:\n"
-            f"{top_5_summary}\n"
-            f"\n📊 Statistics:\n"
-            f"  Experiments: {len(final_output['phase1_baseline']) + len(final_output.get('phase2_sweep', []))}\n"
-            f"  Strategies tested: {len([s for s in all_strategy_names if any(r['strategy'] == s for r in final_output['phase1_baseline'])])}\n"
-            f"  Overall avg fill: {avg_fill_all:.1%}\n"
-            f"\n📦 Pallets Closed:\n"
-            f"  Phase 1: {total_closed_all}\n"
-            f"  Phase 2: {total_closed_p2}\n"
-            f"  Total: {total_closed_all + total_closed_p2}\n"
-            f"\n💾 Results saved to:\n"
-            f"  {out_dir}/results.json"
+            f"⏱  Total:   {_eta_str(total_elapsed)} ({total_elapsed/3600:.1f}h)\n"
+            f"   Phase 1: {_eta_str(elapsed1)}\n"
+            f"   Phase 2: {_eta_str(elapsed2)}\n"
+            f"\n📊 Phase 1 — Top 5 Strategies:\n"
+            f"{top_5_lines}\n"
+            f"\n🔬 Phase 2 — Best Config:\n"
+            f"{best_p2_line}\n"
+            f"\n📦 Stats:\n"
+            f"  Experiments:    {total_experiments}\n"
+            f"  Strategies:     {strats_tested}\n"
+            f"  Pallets closed: {total_closed_all + total_closed_p2}\n"
+            f"  Avg fill (P1):  {avg_fill_all:.1%}\n"
+            f"\n💾 {os.path.basename(out_dir)}/results.json"
         )
 
 

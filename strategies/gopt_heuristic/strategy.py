@@ -217,17 +217,19 @@ class GOPTHeuristicStrategy(BaseStrategy):
         # all others → quality False
         candidate_quality: Dict[Tuple[float, float], bool] = {}
 
+        m = bin_cfg.margin
+
         # True lb_corners (highest quality)
         for gx, gy in lb_corners:
             cx, cy = gx * res, gy * res
-            if 0 <= cx <= bin_cfg.length and 0 <= cy <= bin_cfg.width:
+            if m <= cx <= bin_cfg.length - m and m <= cy <= bin_cfg.width - m:
                 key = (round(cx, 6), round(cy, 6))
                 candidate_quality[key] = True  # is_true_lb_corner
 
         # Cross corners (medium quality)
         for gx, gy in cross_corners:
             cx, cy = gx * res, gy * res
-            if 0 <= cx <= bin_cfg.length and 0 <= cy <= bin_cfg.width:
+            if m <= cx <= bin_cfg.length - m and m <= cy <= bin_cfg.width - m:
                 key = (round(cx, 6), round(cy, 6))
                 if key not in candidate_quality:
                     candidate_quality[key] = False
@@ -238,23 +240,23 @@ class GOPTHeuristicStrategy(BaseStrategy):
                 (p.x, p.y), (p.x_max, p.y),
                 (p.x, p.y_max), (p.x_max, p.y_max),
             ]:
-                if 0 <= cx <= bin_cfg.length and 0 <= cy <= bin_cfg.width:
+                if m <= cx <= bin_cfg.length - m and m <= cy <= bin_cfg.width - m:
                     key = (round(cx, 6), round(cy, 6))
                     if key not in candidate_quality:
                         candidate_quality[key] = False
 
-        # Always include origin
-        candidate_quality[(0.0, 0.0)] = (0.0, 0.0) in {
-            (gx * res, gy * res) for gx, gy in lb_corners
-        }
+        # Always include the margin-offset origin
+        origin_key = (round(m, 6), round(m, 6))
+        if origin_key not in candidate_quality:
+            candidate_quality[origin_key] = False
 
         # ── 2. Fallback: sparse grid scan for empty / flat bins ───────────
         if len(candidate_quality) < MIN_CORNER_CANDIDATES:
             grid_step = max(res * 2.0, res)  # sparse scan: every 2 cells
-            x = 0.0
-            while x <= bin_cfg.length + 1e-9:
-                y = 0.0
-                while y <= bin_cfg.width + 1e-9:
+            x = m
+            while x <= bin_cfg.length - m + 1e-9:
+                y = m
+                while y <= bin_cfg.width - m + 1e-9:
                     key = (round(x, 6), round(y, 6))
                     if key not in candidate_quality:
                         candidate_quality[key] = False

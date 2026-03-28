@@ -296,9 +296,13 @@ class GravityBalancedStrategy(BaseStrategy):
         best_oidx: Optional[int] = None
         best_footprint: float = -1.0
 
+        m = bin_cfg.margin
+        usable_l = bin_cfg.length - 2 * m
+        usable_w = bin_cfg.width - 2 * m
+
         for oidx, ol, ow, oh in valid_orientations:
-            # Must fit at origin
-            if ol > bin_cfg.length + 1e-6 or ow > bin_cfg.width + 1e-6:
+            # Must fit within the margin-constrained usable area
+            if ol > usable_l + 1e-6 or ow > usable_w + 1e-6:
                 continue
             if oh > bin_cfg.height + 1e-6:
                 continue
@@ -311,7 +315,7 @@ class GravityBalancedStrategy(BaseStrategy):
         if best_oidx is None:
             return None
 
-        return PlacementDecision(x=0.0, y=0.0, orientation_idx=best_oidx)
+        return PlacementDecision(x=m, y=m, orientation_idx=best_oidx)
 
     # -- Center of gravity computation --------------------------------------
 
@@ -392,11 +396,13 @@ class GravityBalancedStrategy(BaseStrategy):
         seen: Set[Tuple[float, float]] = set()
         candidates: List[Tuple[float, float]] = []
 
-        # Source 1: Coarse grid scan
-        x = 0.0
-        while x <= bin_cfg.length:
-            y = 0.0
-            while y <= bin_cfg.width:
+        m = bin_cfg.margin
+
+        # Source 1: Coarse grid scan (margin-constrained)
+        x = m
+        while x <= bin_cfg.length - m:
+            y = m
+            while y <= bin_cfg.width - m:
                 pt = (x, y)
                 if pt not in seen:
                     seen.add(pt)
@@ -414,16 +420,16 @@ class GravityBalancedStrategy(BaseStrategy):
             ]
             for pt in corner_points:
                 if (pt not in seen
-                        and 0 <= pt[0] <= bin_cfg.length
-                        and 0 <= pt[1] <= bin_cfg.width):
+                        and m <= pt[0] <= bin_cfg.length - m
+                        and m <= pt[1] <= bin_cfg.width - m):
                     seen.add(pt)
                     candidates.append(pt)
 
-        # Source 3: Bin corners (ensure they are always candidates)
+        # Source 3: Margin-offset bin corners (always valid candidates)
         bin_corners = [
-            (0.0, 0.0),
-            (bin_cfg.length, 0.0),
-            (0.0, bin_cfg.width),
+            (m, m),
+            (bin_cfg.length - m, m),
+            (m, bin_cfg.width - m),
         ]
         for pt in bin_corners:
             if pt not in seen:

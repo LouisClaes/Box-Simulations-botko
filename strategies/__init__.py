@@ -31,12 +31,39 @@ import strategies.pct_macs_heuristic  # registers PCTMACSHeuristicStrategy
 import strategies.two_bounded_best_fit  # registers TwoBoundedBestFitStrategy (MultiBinStrategy)
 import strategies.gopt_heuristic  # registers GOPTHeuristicStrategy
 import strategies.tsang_multibin  # registers TsangMultiBinStrategy (MultiBinStrategy)
-import strategies.rl_dqn  # registers RLDQNStrategy (DDQN reinforcement learning)
-import strategies.rl_ppo  # registers RLPPOStrategy (PPO reinforcement learning)
-import strategies.rl_a2c_masked  # registers RLA2CMaskedStrategy (A2C with feasibility masking)
-import strategies.rl_hybrid_hh  # registers RLHybridHHStrategy (RL hyper-heuristic selector)
-import strategies.rl_pct_transformer  # registers RLPCTTransformerStrategy (PCT Transformer RL)
-import strategies.rl_mcts_hybrid  # registers RLMCTSHybridStrategy + RLMCTSHybridMultiBinStrategy
+# Optional RL imports – skip if dependencies (torch, etc.) are missing.
+# This allows overnight scripts to run on lightweight installs without
+# pulling in the entire RL stack.
+
+try:
+    import strategies.rl_dqn  # registers RLDQNStrategy (DDQN reinforcement learning)
+except ImportError:
+    pass
+
+try:
+    import strategies.rl_ppo  # registers RLPPOStrategy (PPO reinforcement learning)
+except ImportError:
+    pass
+
+try:
+    import strategies.rl_a2c_masked  # registers RLA2CMaskedStrategy (A2C with feasibility masking)
+except ImportError:
+    pass
+
+try:
+    import strategies.rl_hybrid_hh  # registers RLHybridHHStrategy (RL hyper-heuristic selector)
+except ImportError:
+    pass
+
+try:
+    import strategies.rl_pct_transformer  # registers RLPCTTransformerStrategy (PCT Transformer RL)
+except ImportError:
+    pass
+
+try:
+    import strategies.rl_mcts_hybrid  # registers RLMCTSHybridStrategy + RLMCTSHybridMultiBinStrategy
+except ImportError:
+    pass
 
 __all__ = [
     "BaseStrategy", "get_strategy", "register_strategy", "STRATEGY_REGISTRY",

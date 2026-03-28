@@ -295,14 +295,15 @@ class BlueprintPackingStrategy(BaseStrategy):
         best_z = np.inf
         best_pos = None
 
+        m = bin_cfg.margin
         for ol, ow, oh in orientations:
-            if ol > bin_cfg.length or ow > bin_cfg.width or oh > bin_cfg.height:
+            if ol > bin_cfg.length - 2 * m or ow > bin_cfg.width - 2 * m or oh > bin_cfg.height:
                 continue
 
-            x = 0.0
-            while x + ol <= bin_cfg.length + 1e-6:
-                y = 0.0
-                while y + ow <= bin_cfg.width + 1e-6:
+            x = m
+            while x + ol <= bin_cfg.length - m + 1e-6:
+                y = m
+                while y + ow <= bin_cfg.width - m + 1e-6:
                     # Query resting height from virtual map.
                     gx = int(round(x / res))
                     gy = int(round(y / res))
@@ -450,8 +451,9 @@ class BlueprintPackingStrategy(BaseStrategy):
         """
         cfg = self.config
 
-        # Gather candidate positions: origin + corners of placed boxes.
-        candidates: List[Tuple[float, float]] = [(0.0, 0.0)]
+        # Gather candidate positions: margin-offset origin + corners of placed boxes.
+        m = bin_cfg.margin
+        candidates: List[Tuple[float, float]] = [(m, m)]
         for p in bin_state.placed_boxes:
             candidates.extend([
                 (p.x, p.y),

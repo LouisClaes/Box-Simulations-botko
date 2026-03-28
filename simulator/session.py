@@ -947,9 +947,6 @@ class PackingSession:
             # 2. MAX REJECTS: Already rejected 8+ boxes (prevent infinite cycling)
             # ═══════════════════════════════════════════════════════════════════
 
-            # Track cumulative rejections (increments before placement check)
-            self._consecutive_rejects += 1
-
             # ── CONDITION 1: LOOKAHEAD CHECK ──────────────────────────────────
             # Get current observation to access buffer
             obs = self.observe()
@@ -980,9 +977,10 @@ class PackingSession:
             )
 
             # ── CONDITION 2: MAX REJECTS LIMIT ───────────────────────────────
-            # Prevent infinite cycling: if we've rejected 8+ boxes, force close
-            # This handles edge case where every Nth box fits, resetting lookahead
-            max_rejects_reached = self._consecutive_rejects >= 8
+            # Prevent infinite cycling: force close after 8 consecutive rejections.
+            # Threshold is 7 (not 8) because advance_conveyor() increments the counter
+            # AFTER this check — so counter=7 means we are about to make the 8th advance.
+            max_rejects_reached = self._consecutive_rejects >= 7
 
             # ── CLOSE DECISION ────────────────────────────────────────────────
             should_close = lookahead_stuck or max_rejects_reached
@@ -993,10 +991,12 @@ class PackingSession:
 
             stations_to_close = []
             if should_close and can_close:
-                # Check which pallets should close (must be reasonably full)
+                # Check which pallets should close (must be reasonably full).
+                # Use the configured close policy's min_fill_to_close if available.
+                min_fill = getattr(self._config.close_policy, 'min_fill_to_close', 0.5)
                 stations_to_close = [
                     st for st in self._stations
-                    if st.bin_state.get_fill_rate() >= 0.5  # Only close if >=50% full
+                    if st.bin_state.get_fill_rate() >= min_fill
                 ]
 
             if stations_to_close:

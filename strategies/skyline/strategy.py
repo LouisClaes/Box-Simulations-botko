@@ -98,14 +98,18 @@ class SkylineStrategy(BaseStrategy):
             y_start = float(gy_start) * bin_cfg.resolution
             valley_depth = valley_depths[int(gy_start)]
 
+            m = bin_cfg.margin
+            if y_start < m:
+                valleys_tried += 1
+                continue
             for oidx, (ol, ow, oh) in enumerate(orientations):
-                if ol > bin_cfg.length or ow > bin_cfg.width or oh > bin_cfg.height:
+                if ol > bin_cfg.length - 2 * m or ow > bin_cfg.width - 2 * m or oh > bin_cfg.height:
                     continue
-                if y_start + ow > bin_cfg.width + 1e-6:
+                if y_start + ow > bin_cfg.width - m + 1e-6:
                     continue
 
-                x = 0.0
-                while x + ol <= bin_cfg.length + 1e-6:
+                x = m
+                while x + ol <= bin_cfg.length - m + 1e-6:
                     z = self._feasible_height(x, y_start, ol, ow, oh, bin_state)
                     if z is not None:
                         score = self._score_candidate(
@@ -162,8 +166,9 @@ class SkylineStrategy(BaseStrategy):
         best_score = -np.inf
         best_candidate: Optional[Tuple[float, float, int]] = None
 
-        y = 0.0
-        while y <= bin_cfg.width + 1e-6:
+        m = bin_cfg.margin
+        y = m
+        while y <= bin_cfg.width - m + 1e-6:
             gy = int(round(y / res))
             if gy < 0 or gy >= len(skyline):
                 y += self._fallback_step
@@ -171,13 +176,13 @@ class SkylineStrategy(BaseStrategy):
             valley_depth = float(valley_depths[gy])
 
             for oidx, (ol, ow, oh) in enumerate(orientations):
-                if ol > bin_cfg.length or ow > bin_cfg.width or oh > bin_cfg.height:
+                if ol > bin_cfg.length - 2 * m or ow > bin_cfg.width - 2 * m or oh > bin_cfg.height:
                     continue
-                if y + ow > bin_cfg.width + 1e-6:
+                if y + ow > bin_cfg.width - m + 1e-6:
                     continue
 
-                x = 0.0
-                while x + ol <= bin_cfg.length + 1e-6:
+                x = m
+                while x + ol <= bin_cfg.length - m + 1e-6:
                     z = self._feasible_height(x, y, ol, ow, oh, bin_state)
                     if z is not None:
                         score = self._score_candidate(

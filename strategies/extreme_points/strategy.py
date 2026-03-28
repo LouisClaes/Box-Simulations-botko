@@ -222,21 +222,22 @@ class ExtremePointsStrategy(BaseStrategy):
         seen: Set[Tuple[float, float]] = set()
         points: List[Tuple[float, float]] = []
 
-        # Always include the origin as a fallback
-        origin = (0.0, 0.0)
+        # Always include the margin-offset origin as a fallback
+        m = bin_cfg.margin
+        origin = (m, m)
         seen.add(origin)
         points.append(origin)
 
         for p in bin_state.placed_boxes:
             # Right point: immediately to the right of this box
             rp = (p.x_max, p.y)
-            if rp not in seen and rp[0] < bin_cfg.length:
+            if rp not in seen and rp[0] < bin_cfg.length - m:
                 seen.add(rp)
                 points.append(rp)
 
             # Front point: immediately in front of this box
             fp = (p.x, p.y_max)
-            if fp not in seen and fp[1] < bin_cfg.width:
+            if fp not in seen and fp[1] < bin_cfg.width - m:
                 seen.add(fp)
                 points.append(fp)
 
